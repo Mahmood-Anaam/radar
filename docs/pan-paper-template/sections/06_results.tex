@@ -57,7 +57,7 @@ Exp.~4 (RAID only)   & 0.795 & 0.651 & 0.644 & 0.784 & 0.694 & 0.714 \\
 \paragraph{Two-stage training yields the best overall performance.}
 The end-to-end fine-tuned model (Exp.~2) achieves the strongest results across all metrics
 and on all evaluation sets. On the PAN-2026 validation set, it reaches near-perfect performance
-(Mean~=~0.997, ROC-AUC~=~1.000), substantially outperforming the TF-IDF SVM baseline
+(Mean~=~0.997, ROC-AUC~=~1.000), outperforming the TF-IDF SVM baseline
 (Mean~=~0.978) despite the latter being a strong and well-calibrated supervised model.
 On the harder combined validation set that includes adversarial RAID examples, Exp.~2
 achieves Mean~=~0.978, matching the SVM's in-domain performance on a considerably more
@@ -96,7 +96,7 @@ approaches, even without full encoder fine-tuning.
 
 \paragraph{Value of stylometric features.}
 An implicit ablation is provided by contrasting Exp.~3 (PAN-2026 only, frozen encoder)
-against the TF-IDF SVM. While both achieve comparable in-domain performance (Mean~=~0.983
+against the TF-IDF SVM. While both achieve comparable in-domain performance (Mean~=~0.985
 vs.~0.978), RADAR's advantage emerges clearly under distribution shift. The TF-IDF SVM
 is purely lexical and known to fail under synonym substitution and paraphrase; the RADAR
 architecture's stylometric features are more stable under these perturbations because

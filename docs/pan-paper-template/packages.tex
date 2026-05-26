@@ -1,0 +1,48 @@
+% ============================================================
+%  packages.tex  –  All \usepackage declarations and custom
+%                   commands for the RADAR PAN-2026 paper.
+%  Included by main.tex via \input{packages}
+% ============================================================
+
+% --- Core encoding / font ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% --- Math ---
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+
+% --- Colours ---
+\usepackage{xcolor}
+
+% --- Hyperlinks ---
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+% --- Micro-typography ---
+\usepackage{microtype}
+
+% --- Algorithms (optional, kept for future use) ---
+% \usepackage{algorithm}
+% \usepackage{algpseudocode}
+
+% --- Custom commands ---
+\newcommand{\radar}{\textsc{RADAR}}
+\newcommand{\arse}{\textsc{ARSE}}
+\newcommand{\slpe}{\textsc{SLPE}}
+\newcommand{\uacc}{\textsc{UACC}}
+\newcommand{\modernbert}{ModernBERT-large}

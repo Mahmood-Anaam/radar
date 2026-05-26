@@ -1,0 +1,44 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We introduced \radar{}, a hybrid multi-modal system for binary detection of
+machine-generated text that combines the representational depth of a large pre-trained
+encoder with the interpretability and robustness of handcrafted stylometric features.
+The system integrates four purpose-built components: \arse{} (a \modernbert{}-based
+semantic encoder), \slpe{} (a 38-feature statistical linguistic profile extractor),
+a cross-attention fusion module that permits style evidence to selectively modulate
+semantic representations, and \uacc{} (a lightweight classification head).
+
+Our main empirical findings are:
+\begin{enumerate}
+  \item End-to-end fine-tuning of \radar{} achieves a \textbf{mean score of 0.978} on the
+        combined PAN-2026 / RAID validation set across all five official evaluation
+        metrics, surpassing the frozen-encoder Stage-1 system by 3.7 absolute percentage
+        points.
+  \item Augmenting PAN-2026 training data with a curated, attack-diverse RAID subset
+        substantially improves cross-domain generalisation: the TF-IDF SVM baseline,
+        which reaches 0.978 mean on in-domain PAN-2026 data, degrades to 0.746 when
+        evaluated across diverse distributions, while \radar{} maintains 0.978 on the
+        same mixed evaluation.
+  \item The two-stage training curriculum—first training only the lightweight fusion and
+        classification components while freezing the encoder, then jointly fine-tuning all
+        parameters—provides a practical recipe for adapting very large encoders to
+        moderately sized specialised datasets without catastrophic forgetting.
+\end{enumerate}
+
+\paragraph{Limitations.}
+\radar{} shares the general limitation of transformer-based detectors: texts that
+undergo iterative adversarial paraphrasing can reduce both semantic distinctiveness and
+stylometric signal below reliable detection thresholds.  Furthermore, the \slpe{}
+feature quality degrades noticeably for very short texts ($<$100 words), which limits
+reliability in micro-text domains such as social media.
+
+\paragraph{Future Work.}
+Several extensions are promising.  First, replacing the static 38-feature \slpe{} with
+a learned, differentiable stylometric encoder trained jointly with the semantic branch
+might yield richer representations.  Second, incorporating a fine-grained multi-class
+output that identifies the source LLM—rather than a binary human/machine label—would
+expand forensic utility.  Third, extending the architecture to multilingual settings by
+substituting a multilingual \modernbert{} variant and adapting the \slpe{} feature
+definitions for non-English morphology represents an important step toward deployment
+in real-world multilingual pipelines.

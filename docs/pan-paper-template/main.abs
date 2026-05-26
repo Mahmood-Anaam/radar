@@ -1,0 +1,18 @@
+We present \textsc{RADAR} (\textbf{R}obust \textbf{A}dversarial-Resistant
+\textbf{D}etection with \textbf{A}daptive \textbf{R}easoning), a hybrid
+multi-modal architecture submitted to the Voight-Kampff Generative AI
+Detection task at PAN 2026.  \textsc{RADAR} pairs a \mbox{ModernBERT-large}
+semantic encoder (\textsc{ARSE}) with a lightweight 38-feature stylometric
+extractor (\textsc{SLPE}) and integrates the two representations through a
+multi-head cross-attention fusion module.  A two-stage training curriculum—
+first training only the non-encoder components with the backbone frozen, then
+fine-tuning all 399.7M parameters end-to-end—enables stable optimisation on
+a moderate-size combined corpus drawn from the official PAN-2026 dataset and
+a curated, adversarially diverse subset of the RAID benchmark.  On the
+combined validation set (18,423 samples), \textsc{RADAR} achieves a
+mean score of \textbf{0.978} across all five official evaluation metrics
+(ROC-AUC, Brier, $c@1$, $F_1$, $F_{0.5u}$), substantially outperforming a
+TF-IDF SVM baseline that degrades from 0.978 on in-domain data to 0.746
+under cross-domain evaluation.  Our results confirm that combining deep
+semantic representations with explicit stylometric evidence provides
+complementary robustness against adversarial obfuscation.

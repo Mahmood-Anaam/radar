@@ -1,0 +1,96 @@
+\documentclass[twocolumn]{ceurart}
+
+\input{packages}
+
+\begin{document}
+
+%%
+%% Rights management information.
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0
+  International (CC BY 4.0).}
+
+%%
+%% Conference information
+\conference{CLEF 2026 Working Notes, September 2026, Évora, Portugal}
+
+%%
+%% Title
+\title{RADAR: Robust Adversarial-Resistant Detection with Adaptive Reasoning
+       for the Voight-Kampff Generative AI Detection Task at PAN 2026}
+\title[mode=sub]{Notebook for the PAN Lab at CLEF 2026}
+
+%%
+%% Author information
+\author[1]{Mahmood Anaam}[%
+  email=mahmood.anaam@example.com,
+]
+
+\address[1]{Independent Researcher}
+
+\cortext[1]{Corresponding author.}
+
+%%
+%% Abstract
+\begin{abstract}
+We present \textsc{RADAR} (\textbf{R}obust \textbf{A}dversarial-Resistant
+\textbf{D}etection with \textbf{A}daptive \textbf{R}easoning), a hybrid
+multi-modal architecture submitted to the Voight-Kampff Generative AI
+Detection task at PAN 2026.  \textsc{RADAR} pairs a \mbox{ModernBERT-large}
+semantic encoder (\textsc{ARSE}) with a lightweight 38-feature stylometric
+extractor (\textsc{SLPE}) and integrates the two representations through a
+multi-head cross-attention fusion module.  A two-stage training curriculum—
+first training only the non-encoder components with the backbone frozen, then
+fine-tuning all 399.7M parameters end-to-end—enables stable optimisation on
+a moderate-size combined corpus drawn from the official PAN-2026 dataset and
+a curated, adversarially diverse subset of the RAID benchmark.  On the
+combined validation set (18,423 samples), \textsc{RADAR} achieves a
+mean score of \textbf{0.978} across all five official evaluation metrics
+(ROC-AUC, Brier, $c@1$, $F_1$, $F_{0.5u}$), substantially outperforming a
+TF-IDF SVM baseline that degrades from 0.978 on in-domain data to 0.746
+under cross-domain evaluation.  Our results confirm that combining deep
+semantic representations with explicit stylometric evidence provides
+complementary robustness against adversarial obfuscation.
+\end{abstract}
+
+%%
+%% Keywords
+\begin{keywords}
+  machine-generated text detection \sep
+  authorship verification \sep
+  stylometry \sep
+  transformer encoder \sep
+  adversarial robustness \sep
+  PAN 2026
+\end{keywords}
+
+\maketitle
+
+%% ── Sections ──────────────────────────────────────────────────────────────
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_methodology}
+\input{sections/04_datasets}
+\input{sections/05_experiments}
+\input{sections/06_results}
+\input{sections/07_conclusion}
+
+%% ── Acknowledgements ──────────────────────────────────────────────────────
+\begin{acknowledgments}
+  The authors thank the organisers of the PAN shared tasks and the CLEF
+  evaluation forum for providing the PAN-2026 dataset and evaluation
+  infrastructure~\cite{bevendorff:2025,froebe:2023b}.  We also thank the
+  creators of the RAID benchmark~\cite{dugan:2024} for making their data
+  publicly available.
+\end{acknowledgments}
+
+%% ── Declaration on Generative AI ─────────────────────────────────────────
+\section*{Declaration on Generative AI}
+The author(s) have not employed any Generative AI tools in the preparation
+of this work.
+
+%% ── Bibliography ─────────────────────────────────────────────────────────
+\bibliography{references}
+
+\end{document}

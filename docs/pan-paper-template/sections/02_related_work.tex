@@ -1,0 +1,80 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Machine-Generated Text Detection}
+
+Early work on detecting computer-generated text relied almost exclusively on surface-level
+statistical features.  Koppel and Schler~\cite{koppel:2004} formalised authorship verification
+as a one-class classification problem and showed that function-word distributions are surprisingly
+discriminative.  Sculley and Brodley~\cite{sculley:2006} demonstrated that compression-based
+similarity measures can substitute for explicit feature engineering, an insight that underpins
+the PPMd-cosine baseline used in PAN competitions.
+
+With the emergence of neural language models, the detection landscape changed dramatically.
+Ippolito et al.~\cite{ippolito:2020} established that automatic detectors are most reliable
+precisely when human annotators are themselves uncertain, suggesting that the two tasks are
+deeply coupled.  DetectGPT~\cite{mitchell:2023} pioneered zero-shot detection by exploiting
+the negative curvature of log-probability surfaces: machine-generated text tends to reside
+near local probability maxima, whereas human text does not.  Fast-DetectGPT~\cite{bao:2023}
+improved computational efficiency by replacing perturbation sampling with conditional
+probability estimation.  DetectLLM~\cite{su:2023} further explored log-rank statistics as
+a proxy for machine origin.  Binoculars~\cite{hans:2024} extended this line by comparing
+the perplexity of a text under two LMs with different calibrations, achieving strong
+zero-shot performance across several benchmarks.
+
+Despite their elegance, zero-shot detectors suffer a fundamental limitation: adversarial
+paraphrasing or character-level obfuscation can shift the output distribution away from
+the LM's probability surface, undermining detection~\cite{sadasivan:2023}.  The
+Voight-Kampff task deliberately incorporates such obfuscations (homoglyph substitution,
+synonym replacement, paraphrase attacks), making zero-shot approaches unsuitable as
+primary detectors.
+
+Supervised approaches trained on labelled corpora generally outperform zero-shot methods
+on in-domain data.  The TF-IDF linear SVM evaluated in PAN 2024 and 2025 achieves
+near-perfect in-domain performance (mean $\approx 0.978$)~\cite{bevendorff:2025},
+illustrating that the task is tractable when training and test distributions align.  However,
+Bevendorff et al.~\cite{bevendorff:2025b} demonstrate that purely attribution-based supervised
+models do not transfer gracefully to new LLMs or obfuscation types, reinforcing the need for
+adversarially robust representations.
+
+\subsection{Transformer Encoders for Text Classification}
+
+BERT~\cite{devlin:2019} established the encoder-only pre-training paradigm, showing that
+bidirectional contextual representations are highly transferable to downstream classification
+tasks.  RoBERTa~\cite{liu:2019} refined BERT's pre-training recipe, eliminating next-sentence
+prediction and training on substantially more data.  \modernbert{}~\cite{warner:2024}
+is a recent encoder that incorporates rotary positional embeddings (RoPE), alternating local
+and global attention layers, and Flash Attention, yielding improved efficiency and performance,
+particularly for long contexts.  Its support for sequences up to 8,192 tokens makes it
+especially well suited to the variable-length texts in the PAN-2026 corpus.  We adopt
+\modernbert{} as the backbone of \arse{} without modification of its architecture.
+
+\subsection{Stylometric Features in Authorship Analysis}
+
+Stylometry—the quantitative study of writing style—has a long history in authorship attribution.
+Classic measures include the type-token ratio (TTR), Honore's R~\cite{honore:1979}, and
+Brunet's W~\cite{brunet:1978}, each capturing different facets of vocabulary richness.  
+Syntactic features such as average sentence length and passive voice frequency have long
+been used as discriminative signals in authorship tasks.  Schuster et al.~\cite{schuster:2020}
+caution that simple stylometric features are insufficient to detect machine-generated fake news,
+largely because modern LLMs are explicitly prompted to reproduce human syntactic patterns.
+However, our analysis suggests that higher-order discourse features—paragraph coherence,
+information-flow regularity, and connective marker diversity—remain distinctive even when
+first-order surface features are obfuscated, motivating the 38-dimensional feature set in
+\slpe{}.
+
+\subsection{Multi-Modal and Hybrid Detectors}
+
+Combining neural representations with engineered features for text classification has been
+explored in several contexts, though rarely for LLM detection.  Our use of cross-attention
+to integrate semantic and stylometric modalities follows the general framework introduced
+by Vaswani et al.~\cite{vaswani:2017}, adapted here to fuse heterogeneous feature types
+rather than encoder layers.  The RAID benchmark~\cite{dugan:2024} provides a large-scale,
+multi-domain, multi-attack evaluation suite that enables systematic robustness assessment
+beyond any single competition's data distribution; we incorporate RAID into our training
+pipeline to increase coverage of adversarial attack types.
+
+The PAN shared tasks on generative AI detection~\cite{bevendorff:2024d,bevendorff:2025d}
+provide the primary experimental context.  Our work builds directly on the evaluation
+infrastructure and baselines developed for PAN 2024--2025 and targets the extended
+robustness requirements of PAN 2026.

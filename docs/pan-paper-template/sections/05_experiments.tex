@@ -1,0 +1,104 @@
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Training Strategy}
+
+Given the large number of parameters in \arse{} (394.8M), training end-to-end from
+scratch would both be computationally prohibitive and likely overfit the moderately
+sized combined dataset.  We therefore adopt a two-stage curriculum:
+
+\paragraph{Stage 1 — Frozen-encoder pre-training.}
+The \modernbert{} backbone weights are frozen; only the \slpe{} projection, the
+cross-attention fusion module, and the \uacc{} classifier are updated (4.9M parameters,
+$\approx 1.2\%$ of the total).  This stage teaches the fusion and classification
+components to exploit pre-trained semantic representations without distorting them.
+The model trained in this stage is saved as \texttt{radar-encoder-freeze} and serves
+as the initialisation point for Stage 2.
+
+\paragraph{Stage 2 — End-to-end fine-tuning.}
+Starting from the Stage-1 checkpoint, all 399.7M parameters are unfrozen and jointly
+optimised.  The lower learning rate (same value as Stage 1) combined with the warm
+start prevents catastrophic forgetting of the \modernbert{} pretraining while allowing
+the backbone to adapt its representations to the detection task.
+
+\subsection{Hyperparameters}
+
+Table~\ref{tab:hparams} lists the hyperparameters common to all four training
+experiments.  We use a linear warm-up for the first 3\% of steps followed by
+cosine annealing to zero.  The fused AdamW implementation in PyTorch 2.x
+reduces memory overhead and accelerates weight updates.
+
+\begin{table}[t]
+  \caption{Hyperparameters shared across all training runs.}
+  \label{tab:hparams}
+  \centering
+  \begin{tabular}{ll}
+    \toprule
+    Hyperparameter & Value \\
+    \midrule
+    Optimiser              & AdamW (fused) \\
+    Learning rate          & $2 \times 10^{-5}$ \\
+    Weight decay           & $1 \times 10^{-2}$ \\
+    Training epochs        & 10 \\
+    Batch size             & 32 \\
+    LR schedule            & Cosine with 3\% linear warm-up \\
+    Gradient clipping      & 1.0 \\
+    Loss function          & BCEWithLogitsLoss \\
+    Positive class weight  & $w^+ = 0.746$ \\
+    Max token length       & 512 \\
+    Dropout (fusion)       & 0.1 \\
+    Dropout (\slpe{})      & 0.1 \\
+    Precision              & bf16 (mixed) \\
+    Hardware               & NVIDIA A100 (40 GB) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Evaluation Metrics}
+\label{subsec:metrics}
+
+Following the PAN-2026 evaluation protocol~\cite{bevendorff:2025}, model performance is
+assessed using five complementary metrics:
+
+\begin{description}
+  \item[ROC-AUC] Area under the Receiver Operating Characteristic curve; measures
+        ranking quality independently of any decision threshold.
+  \item[Brier Score (inverted)] $1 - \frac{1}{N}\sum_i (y_i - \hat{y}_i)^2$;
+        measures calibration of predicted probabilities.  Higher is better (range
+        $[0,1]$).
+  \item[$c@1$~\cite{penas:2011}] A variant of accuracy that rewards abstaining on
+        uncertain cases by preserving the accuracy of answered questions when
+        $|\hat{y}-0.5| < \tau$ is left unanswered.
+  \item[$F_1$ macro] Harmonic mean of precision and recall for both classes, averaged.
+  \item[$F_{0.5}$ (upright, $F_{0.5u}$)] Weighted $F$ measure with $\beta=0.5$,
+        emphasising precision over recall; relevant for applications where false
+        positives are more costly than false negatives.
+\end{description}
+
+The \emph{mean} over all five metrics is the primary ranking criterion on the
+PAN-2026 leaderboard.
+
+\subsection{Training Experiments}
+
+\paragraph{Experiment 1: radar-encoder-freeze.}
+Full combined dataset (38,503 train / 18,423 val); encoder frozen; 10 epochs.
+This is the baseline frozen-encoder system.
+
+\paragraph{Experiment 2: RADAR (end-to-end).}
+Initialised from Experiment 1; all weights unfrozen; same combined dataset; 10 epochs.
+This constitutes the full \radar{} system submitted to PAN-2026.
+
+\paragraph{Experiment 3: radar-encoder-freeze-pan26.}
+PAN-2026 data only (23,682 train / 3,589 val); encoder frozen; 10 epochs.
+Ablation study isolating the contribution of in-domain PAN-2026 data.
+
+\paragraph{Experiment 4: radar-encoder-freeze-raid.}
+RAID data only (sampled 30k train / 10k test); encoder frozen; 10 epochs.
+Ablation study isolating the contribution of external, adversarially perturbed RAID data.
+
+\subsection{Baseline}
+
+To contextualise neural performance, we implement a classical TF-IDF SVM baseline using
+scikit-learn: character and word n-grams ($n \in \{1,2,3\}$, character; $n \in \{1,2\}$,
+word), sublinear TF scaling, and a LinearSVC classifier.  The baseline is evaluated on
+the same splits as the neural models.

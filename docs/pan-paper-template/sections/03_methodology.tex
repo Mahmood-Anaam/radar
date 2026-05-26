@@ -1,0 +1,183 @@
+\section{The RADAR Architecture}
+\label{sec:method}
+
+\radar{} is a multi-modal binary classifier built around the HuggingFace \texttt{PreTrainedModel}
+interface for seamless integration with the Transformers training ecosystem~\cite{wolf:2020}.
+Figure~\ref{fig:architecture} provides an overview.  The model has four principal components:
+\arse{}, \slpe{}, Cross-Attention Fusion, and \uacc{}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{images/radar_architecture.pdf}
+  \caption{Overview of the \radar{} architecture.  Input text is processed in parallel by
+           the \arse{} semantic encoder and the \slpe{} stylometric extractor.  The two
+           representations are fused via multi-head cross-attention before being passed
+           to the \uacc{} classification head.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{ARSE: Adaptive Robust Semantic Encoder}
+
+\arse{} is a \modernbert{} encoder~\cite{warner:2024} that ingests a tokenised, truncated
+text sequence of up to 512 tokens and produces a dense contextual representation.
+We extract the \texttt{[CLS]} token embedding from the final hidden layer as the
+sentence-level semantic representation $\mathbf{h}_\text{sem} \in \mathbb{R}^{1024}$.
+
+Formally, let $\mathbf{x} = (x_1, \ldots, x_T)$ be the token sequence.  The encoder
+computes:
+\begin{equation}
+  \mathbf{H} = \text{ModernBERT}(\mathbf{x}, \boldsymbol{\alpha}),
+  \quad
+  \mathbf{h}_\text{sem} = \mathbf{H}[:,0,:],
+\end{equation}
+where $\boldsymbol{\alpha}$ is the attention mask and $\mathbf{H} \in \mathbb{R}^{T \times 1024}$
+is the full hidden-state matrix.
+
+The rationale for choosing \modernbert{} over earlier BERT variants is threefold.
+First, its RoPE positional encoding generalises better to sequence lengths beyond
+those seen during pre-training, which matters given the variable length of PAN-2026 texts.
+Second, alternating local/global attention reduces quadratic complexity while preserving
+long-range dependencies.  Third, Flash Attention support substantially reduces GPU memory
+consumption, enabling a batch size of 32 per device without gradient accumulation on
+a single A100 GPU.
+
+\subsection{SLPE: Statistical Linguistic Profile Extractor}
+\label{subsec:slpe}
+
+\slpe{} computes a 38-dimensional vector of interpretable stylometric features from raw text,
+without requiring any external language model or grammatical parser.  Features are organised
+in five categories, all normalised to $[0,1]$:
+
+\subsubsection*{Category 1 — Vocabulary Richness (8 features)}
+\begin{description}
+  \item[Type-Token Ratio (TTR)] $\text{TTR} = V/N$, where $V$ is vocabulary size and $N$
+        is token count.  AI texts tend toward slightly higher TTR due to deliberate lexical
+        variation.
+  \item[Hapax Legomena Ratio] Proportion of words appearing exactly once; captures
+        vocabulary tail behaviour.
+  \item[Brunet's W~\cite{brunet:1978}] $W = N^{V^{-0.172}}$, a length-normalised
+        vocabulary measure.
+  \item[Honore's R~\cite{honore:1979}] $R = 100 \ln N / (1 - V_1/V)$, where $V_1$ is
+        hapax count; sensitive to hapax density.
+  \item[MATTR] Moving-average TTR over windows of 100 tokens; reduces length-dependence
+        of TTR.
+  \item[Vocabulary Richness Slope] Least-squares slope of windowed TTR values; positive
+        slopes indicate increasing diversity across the text.
+  \item[Rare Word Frequency] Identical to hapax ratio by construction; included as
+        an independent feature for the model to exploit.
+  \item[Function Word Density] Proportion of tokens drawn from a closed-class lexicon of
+        $\sim$110 function words.
+\end{description}
+
+\subsubsection*{Category 2 — Syntactic Complexity (10 features)}
+This category captures structural properties of sentences including average length,
+length variance, skewness of the length distribution, clause density (comma rate),
+subordination ratio, passive voice frequency (heuristic regex pattern), noun-phrase proxy,
+verb density, coordination frequency, and mean relative word position within sentences.
+AI-generated text often exhibits lower sentence-length variance and a preference for
+longer, syntactically regular sentences compared to human writing.
+
+\subsubsection*{Category 3 — Discourse Coherence (8 features)}
+Coherence features measure local and global text structure: lexical cohesion
+(mean inter-sentence Jaccard similarity), pronoun density, transition-word frequency,
+paragraph coherence (mean cosine similarity of adjacent paragraph TF vectors), topic
+consistency (first/last paragraph vocabulary overlap), information-flow regularity
+(variance of new-word introduction rates), semantic repetition, and connective
+marker diversity.
+
+\subsubsection*{Category 4 — Style Fingerprinting (7 features)}
+Surface-level stylistic markers: total punctuation density, capitalisation ratio,
+number frequency, quote usage, parenthetical frequency, paragraph length variance,
+and list-structure frequency.
+
+\subsubsection*{Category 5 — Perplexity Signals (5 features)}
+Statistical approximations of LM perplexity computed from word frequency distributions
+only, without any external language model: forward word entropy, backward word entropy,
+their ratio, surprisal burstiness (variance of per-token surprisal), and mean surprisal.
+High burstiness—alternating between common and rare words—is characteristic of human
+writing, while AI text shows more uniform surprisal.
+
+\noindent
+The \slpe{} is computationally lightweight (pure Python/NumPy, no GPU required) and
+deterministic, processing a typical 500-word text in under $2\,\text{ms}$ on a single CPU core.
+
+\subsection{Cross-Attention Fusion}
+
+The cross-attention fusion module integrates $\mathbf{h}_\text{sem}$ and the projected
+stylometric representation $\mathbf{h}_\text{style} \in \mathbb{R}^{128}$ into a unified
+representation $\mathbf{h}_\text{fused} \in \mathbb{R}^{512}$.
+
+Let $\mathbf{p}_\text{style} = \text{MLP}_\text{proj}(\mathbf{s}) \in \mathbb{R}^{128}$
+be the output of the stylometric projection MLP (Linear$\to$LayerNorm$\to$GELU$\to$Dropout),
+where $\mathbf{s} \in \mathbb{R}^{38}$ is the raw stylometric vector.
+
+The fusion proceeds in three steps:
+
+\begin{enumerate}
+  \item \textbf{Dimensional alignment.}  A learned linear map projects
+        $\mathbf{p}_\text{style}$ to $\mathbb{R}^{1024}$ so that it can serve as
+        key and value in the attention operation:
+        $\mathbf{k}_\text{style} = W_\text{s2h}\,\mathbf{p}_\text{style}$.
+
+  \item \textbf{Multi-head cross-attention.}  The semantic representation acts as the
+        \emph{query}, while the projected style serves as both \emph{key} and \emph{value}:
+        \begin{equation}
+          \mathbf{a} = \text{LayerNorm}\!\left(
+            \text{MHA}\!\left(\mathbf{h}_\text{sem}, \mathbf{k}_\text{style},
+                              \mathbf{k}_\text{style}\right)
+            + \mathbf{h}_\text{sem}\right),
+          \label{eq:crossattn}
+        \end{equation}
+        where MHA denotes 8-head attention with dropout $p=0.1$ and a residual connection.
+        This formulation asks: \emph{which stylometric signals should modulate the semantic
+        encoding?}  The attention mechanism learns to selectively weight style evidence
+        based on the semantic context of each individual text.
+
+  \item \textbf{Fusion MLP.}  The attended semantic vector $\mathbf{a}$ is concatenated
+        with $\mathbf{p}_\text{style}$ and passed through a projection MLP:
+        \begin{equation}
+          \mathbf{h}_\text{fused} = \text{GELU}(\text{LayerNorm}(
+            W_\text{fus}[\mathbf{a};\mathbf{p}_\text{style}] + \mathbf{b}_\text{fus})),
+          \label{eq:fusion}
+        \end{equation}
+        producing the final 512-dimensional fused representation.
+\end{enumerate}
+
+The design ensures that stylometric evidence can \emph{both} modulate the semantic encoding
+(through cross-attention) \emph{and} contribute additively via concatenation, giving the model
+two complementary pathways to exploit stylometric information.
+
+\subsection{UACC: Unified Adaptive Classification Controller}
+
+The classification head is a single linear layer:
+\begin{equation}
+  z = \mathbf{w}^\top \mathbf{h}_\text{fused} + b,
+  \quad
+  \hat{y} = \sigma(z),
+  \label{eq:classifier}
+\end{equation}
+where $\sigma$ is the sigmoid function and $\hat{y} \in (0,1)$ is the AI-authorship
+probability score returned to the evaluation framework.  The choice of a single linear
+head over a multi-layer classification MLP is deliberate: given the richness of
+$\mathbf{h}_\text{fused}$, additional non-linear layers tend to overfit on moderately
+sized datasets.
+
+\subsection{Training Objective}
+
+The model is trained with binary cross-entropy with logits:
+\begin{equation}
+  \mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N}\left[
+    y_i \log \sigma(z_i) \cdot w^+ +
+    (1-y_i)\log(1-\sigma(z_i))
+  \right],
+  \label{eq:loss}
+\end{equation}
+where $w^+ = n_\text{neg}/n_\text{pos}$ is the positive-class weight that compensates for
+the class imbalance in the combined training set ($\approx 57.3\%$ AI samples; $w^+ \approx 0.746$).
+
+\subsection{Parameter Statistics}
+
+The \modernbert{} backbone contributes 394.8M parameters; \slpe{} projection, fusion, and
+classifier together add 4.9M parameters, for a total of \textbf{399.7M} parameters.
+In the frozen-encoder phase, only the 4.9M non-encoder parameters ($1.2\%$ of the total)
+are updated.  End-to-end fine-tuning subsequently trains all 399.7M parameters.

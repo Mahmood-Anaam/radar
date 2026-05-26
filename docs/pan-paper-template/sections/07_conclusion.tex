@@ -1,0 +1,47 @@
+This paper presented RADAR, a hybrid neural architecture for robust AI-generated text
+detection that combines deep contextual semantics with handcrafted stylometric signals.
+Built on ModernBERT-large, RADAR couples a frozen or fine-tuned encoder (ARSE) with a
+stylometric feature extractor (SLPE) and a cross-attention fusion module that lets
+semantic and stylometric representations interact in a principled way before a single
+binary classifier produces a calibrated confidence score.
+
+We trained RADAR through a two-stage curriculum on a heterogeneous dataset combining the
+official PAN-2026 training data and a balanced subsample of the RAID benchmark, which
+encompasses a wide variety of AI generators and text-level adversarial perturbations.
+The final end-to-end model achieves Mean~=~0.997 on the PAN-2026 validation set,
+surpassing all published baselines, and Mean~=~0.972 on the RAID test set, demonstrating
+strong cross-domain generalisation.
+
+The ablation experiments reveal several key findings. First, multi-source training is
+indispensable for robust performance: models trained on a single source degrade
+substantially under domain shift, with Exp.~3 (PAN-2026 only) dropping from
+Mean~=~0.985 in-domain to Mean~=~0.681 on RAID. Second, the two-stage curriculum
+consistently outperforms single-stage training: unfreezing the encoder only after the
+non-encoder modules have converged leads to stable and fast convergence of the full
+model. Third, stylometric features complement semantic representations in a way that
+improves robustness to adversarial obfuscation attacks such as synonym substitution
+and homoglyph injection, which systematically fool purely lexical models.
+
+\paragraph{Limitations.}
+Although RADAR achieves strong performance on the evaluated benchmarks, several
+limitations warrant caution in deployment. The model is trained predominantly on
+English texts; its effectiveness on other languages or mixed-language content is unknown.
+The architecture's maximum input length of 512 tokens means that the signal from longer
+documents is truncated. Furthermore, while RAID covers a diverse range of adversarial
+attacks, new obfuscation strategies may emerge that are not yet represented in the training
+distribution. Finally, the stylometric features are extracted via deterministic rules;
+learned stylometric representations~\cite{halvani:2017} could potentially offer richer
+signals.
+
+\paragraph{Future Work.}
+Promising directions for future work include: (i) extending the evaluation to multilingual
+texts and multilingual base encoders; (ii) incorporating longer-range context through
+hierarchical encoding or sparse attention; (iii) exploring adversarial training with
+additional obfuscation types at training time; and (iv) applying uncertainty calibration
+techniques to further improve the reliability of confidence scores for human-in-the-loop
+review workflows.
+
+In summary, RADAR demonstrates that combining pre-trained language model representations
+with lightweight, theoretically motivated stylometric signals through a principled
+cross-attention fusion mechanism is a highly effective and generalisable approach to
+AI-generated text detection in adversarial conditions.

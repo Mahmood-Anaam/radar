@@ -1,0 +1,120 @@
+We conduct four training experiments designed to study the impact of the encoder
+freezing strategy and the training data composition. All experiments share the
+same RADAR architecture and hyperparameter configuration; the only variables are
+which model weights are updated and which dataset is used for training.
+
+\subsection{Model Initialisation}
+
+In all experiments, the ModernBERT-large encoder is initialised with the pretrained
+weights from the official \texttt{answerdotai/ModernBERT-large} checkpoint on the
+HuggingFace Hub. The SLPE projection layer, the cross-attention fusion module, and
+the classifier are randomly initialised.
+
+\subsection{Two-Stage Training Curriculum}
+
+\paragraph{Stage 1 — Frozen Encoder (Exp.~1).}
+In the first stage, the ModernBERT-large encoder weights are frozen entirely
+(using \texttt{requires\_grad=False}). Only the SLPE projection, the cross-attention
+fusion layer, and the classifier head are trained. With the encoder frozen, the
+number of trainable parameters drops to approximately 4.9~million (1.2\% of total),
+which substantially accelerates training and reduces GPU memory pressure.
+
+This stage serves two purposes. First, it trains the stylometric and fusion modules
+to extract complementary information from the static encoder representations, ensuring
+that the style branch learns meaningful projections. Second, the resulting checkpoint
+provides a well-initialised starting point for Stage~2 that is considerably better
+than random initialisation of the non-encoder components.
+
+\paragraph{Stage 2 — Full Fine-Tuning (Exp.~2).}
+In the second stage, the Stage~1 checkpoint is loaded and all encoder weights are
+unfrozen. All 399.7~million parameters are jointly optimised. The lower learning rate
+relative to Stage~1 (both use $2 \times 10^{-5}$ due to the small batch size and
+cosine scheduler) prevents catastrophic forgetting of the encoder's pre-trained
+representations while allowing targeted fine-tuning on the authorship signal.
+
+\subsection{Ablation Experiments}
+
+Two additional single-stage experiments isolate the contribution of each data source:
+
+\begin{itemize}
+  \item \textbf{Exp.~3 — PAN-2026 Only (Frozen Encoder)}: Same as Stage~1 but trained
+        exclusively on the PAN-2026 training set (23,682 samples). This measures in-domain
+        performance and quantifies the marginal contribution of the RAID augmentation.
+  \item \textbf{Exp.~4 — RAID Only (Frozen Encoder)}: Same as Stage~1 but trained
+        exclusively on the RAID dev subsample (30,000 samples). This measures out-of-domain
+        generalisation and the effect of adversarial attack diversity.
+\end{itemize}
+
+\subsection{Hyperparameters}
+
+Table~\ref{tab:hyperparams} lists the training hyperparameters used across all experiments.
+All experiments were trained on a single NVIDIA A100~40~GB GPU using 32-bit mixed precision
+with \texttt{bfloat16} for the encoder and full precision for the fusion/classification head.
+
+\begin{table}[t]
+\caption{Training hyperparameters used in all experiments.}
+\label{tab:hyperparams}
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Base encoder            & ModernBERT-large \\
+Max sequence length     & 512 tokens \\
+Style dimension ($d_s$) & 38 \\
+Style projection dim    & 128 \\
+Fusion dimension        & 512 \\
+Attention heads (fusion)& 8 \\
+Dropout                 & 0.1 \\
+Learning rate           & $2 \times 10^{-5}$ \\
+LR scheduler            & Cosine decay \\
+Warmup steps            & 3\% of total steps \\
+Optimizer               & AdamW (fused) \\
+$\beta_1, \beta_2$      & 0.9, 0.999 \\
+$\varepsilon$           & $1 \times 10^{-8}$ \\
+Train batch size        & 32 \\
+Eval batch size         & 64 \\
+Gradient accumulation   & 1 \\
+Epochs                  & 10 \\
+Positive class weight   & 0.746 \\
+Seed                    & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Evaluation Protocol}
+
+All models are evaluated with the official PAN-2026 evaluator
+(\texttt{pan26-evaluator}~\cite{froebe:2023b}), which computes the following metrics:
+
+\begin{itemize}
+  \item \textbf{ROC-AUC}: area under the receiver operating characteristic curve.
+  \item \textbf{Brier}: complement of the Brier score ($1 - \text{MSE}$).
+  \item \textbf{C@1}: modified accuracy that assigns non-answers (score~$= 0.5$)
+        the average accuracy of the remaining cases, rewarding abstention over
+        wrong answers.
+  \item \textbf{F1}: harmonic mean of precision and recall.
+  \item \textbf{F0.5u}: precision-weighted F-measure that treats non-answers as
+        false negatives.
+  \item \textbf{Mean}: arithmetic mean of all five metrics above.
+\end{itemize}
+
+We report evaluation results on three sets: the combined validation set (Val, 18,423 samples),
+the PAN-2026 validation set only (PAN26-Val, 3,589 samples), and the RAID test set (RAID-Test,
+10,000 samples). The last two allow us to separately assess in-domain and out-of-domain performance.
+
+\subsection{Baseline Comparison}
+
+We compare our results against three published baselines provided by the organisers:
+
+\begin{enumerate}
+  \item \textbf{TF-IDF SVM}: linear SVM trained on TF-IDF bag-of-words features.
+  \item \textbf{PPMd Compression Cosine}~\cite{sculley:2006,halvani:2017}: unsupervised
+        compression-based authorship similarity model.
+  \item \textbf{Binoculars}~\cite{hans:2024}: zero-shot detector using cross-model
+        perplexity divergence.
+\end{enumerate}
+
+Note that the official baseline numbers were computed on the \emph{pure PAN-2026 validation set}
+(3,589 samples). Our combined validation set is larger (18,423 samples) and includes harder
+adversarial examples from RAID. Direct numerical comparison should therefore be interpreted
+with this caveat in mind; we use the PAN26-Val subset for a fair in-domain comparison.

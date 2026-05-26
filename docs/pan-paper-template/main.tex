@@ -1,0 +1,133 @@
+\documentclass[]{ceurart}
+\input{packages}
+
+\begin{document}
+
+%%
+%% Rights management information.
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0
+  International (CC BY 4.0).}
+
+%%
+%% Conference information
+\conference{CLEF 2026 Working Notes, September 2026, Évora, Portugal}
+
+%%
+%% Title
+\title{RADAR: Robust Adversarial-Resistant Detection with Adaptive Reasoning for AI-Generated Text}
+\title[mode=sub]{Notebook for the PAN Lab at CLEF 2026}
+
+%%
+%% Author information
+\author[1]{Mahmood Anaam}[%
+  email=mahmood.anaam@example.com,
+]
+
+\address[1]{University, Country}
+
+\cortext[1]{Corresponding author.}
+
+%%
+%% Abstract
+\begin{abstract}
+Detecting AI-generated text is increasingly challenging as large language models
+produce prose that closely mimics human writing, especially when adversarial obfuscation
+techniques are applied. We present \textbf{RADAR} (\textbf{R}obust \textbf{A}dversarial-Resistant
+\textbf{D}etection with \textbf{A}daptive \textbf{R}easoning), a hybrid neural architecture
+that fuses contextual semantic embeddings from a ModernBERT-large encoder with a rich
+set of 38 handcrafted stylometric features through a multi-head cross-attention mechanism.
+RADAR is trained on a two-stage curriculum that first trains the stylometric projection
+and fusion modules on a frozen encoder before jointly fine-tuning all weights, using a
+heterogeneous training corpus that combines the official PAN-2026 data with a balanced,
+adversarially augmented subset of the RAID benchmark. On the combined held-out validation
+set, our final model achieves a mean PAN score of 0.978 (ROC-AUC\,=\,0.992), and
+near-perfect performance on the PAN-2026-only validation split (Mean\,=\,0.997,
+ROC-AUC\,=\,1.000). Ablation studies confirm that multi-source training is essential
+for cross-domain robustness and that the two-stage curriculum consistently outperforms
+single-stage fine-tuning.
+\end{abstract}
+
+%%
+%% Keywords
+\begin{keywords}
+  AI-generated text detection \sep
+  authorship verification \sep
+  stylometric analysis \sep
+  cross-attention fusion \sep
+  ModernBERT \sep
+  PAN 2026
+\end{keywords}
+
+\maketitle
+
+%% -------------------------------------------------------
+%% 1. Introduction
+%% -------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+\input{sections/01_introduction}
+
+%% -------------------------------------------------------
+%% 2. Related Work
+%% -------------------------------------------------------
+\section{Related Work}
+\label{sec:related}
+\input{sections/02_related_work}
+
+%% -------------------------------------------------------
+%% 3. Methodology
+%% -------------------------------------------------------
+\section{Methodology}
+\label{sec:method}
+\input{sections/03_methodology}
+
+%% -------------------------------------------------------
+%% 4. Data
+%% -------------------------------------------------------
+\section{Data}
+\label{sec:data}
+\input{sections/04_data}
+
+%% -------------------------------------------------------
+%% 5. Experiments
+%% -------------------------------------------------------
+\section{Experimental Setup}
+\label{sec:experiments}
+\input{sections/05_experiments}
+
+%% -------------------------------------------------------
+%% 6. Results and Discussion
+%% -------------------------------------------------------
+\section{Results and Discussion}
+\label{sec:results}
+\input{sections/06_results}
+
+%% -------------------------------------------------------
+%% 7. Conclusion
+%% -------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+\input{sections/07_conclusion}
+
+%% -------------------------------------------------------
+%% Acknowledgments
+%% -------------------------------------------------------
+\begin{acknowledgments}
+The author thanks the PAN 2026 organisers for providing the task infrastructure
+and the TIRA evaluation platform~\cite{froebe:2023b}. We are grateful to the creators
+of the RAID benchmark~\cite{dugan:2024} for making their dataset publicly available.
+\end{acknowledgments}
+
+%% -------------------------------------------------------
+%% Declaration on Generative AI
+%% -------------------------------------------------------
+\section*{Declaration on Generative AI}
+The author(s) have not employed any Generative AI tools in the preparation of this work.
+
+%%
+%% Bibliography
+\bibliography{references}
+
+\end{document}

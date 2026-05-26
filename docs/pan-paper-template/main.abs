@@ -1,0 +1,15 @@
+Detecting AI-generated text is increasingly challenging as large language models
+produce prose that closely mimics human writing, especially when adversarial obfuscation
+techniques are applied. We present \textbf{RADAR} (\textbf{R}obust \textbf{A}dversarial-Resistant
+\textbf{D}etection with \textbf{A}daptive \textbf{R}easoning), a hybrid neural architecture
+that fuses contextual semantic embeddings from a ModernBERT-large encoder with a rich
+set of 38 handcrafted stylometric features through a multi-head cross-attention mechanism.
+RADAR is trained on a two-stage curriculum that first trains the stylometric projection
+and fusion modules on a frozen encoder before jointly fine-tuning all weights, using a
+heterogeneous training corpus that combines the official PAN-2026 data with a balanced,
+adversarially augmented subset of the RAID benchmark. On the combined held-out validation
+set, our final model achieves a mean PAN score of 0.978 (ROC-AUC\,=\,0.992), and
+near-perfect performance on the PAN-2026-only validation split (Mean\,=\,0.997,
+ROC-AUC\,=\,1.000). Ablation studies confirm that multi-source training is essential
+for cross-domain robustness and that the two-stage curriculum consistently outperforms
+single-stage fine-tuning.

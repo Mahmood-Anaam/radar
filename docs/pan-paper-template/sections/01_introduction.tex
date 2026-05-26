@@ -1,0 +1,68 @@
+The rapid proliferation of large language models (LLMs) has made the automated generation of
+human-quality text not only feasible but practically trivial. Modern LLMs such as GPT-4o,
+Claude~3.5, and Llama~3 can produce extended, coherent, and stylistically nuanced prose that
+is increasingly indistinguishable from genuine human writing—even to expert readers
+\cite{jakesch:2023}. This capability has profound implications for academic integrity,
+journalistic credibility, and online discourse, creating an urgent need for reliable AI-text
+detection systems.
+
+The PAN 2026 Voight-Kampff task~\cite{bevendorff:2025,bevendorff:2026overview} directly addresses
+this challenge in a particularly demanding setting: the LLMs were explicitly instructed to mimic
+specific human authors, and the evaluation set includes previously unseen obfuscation strategies
+and generator models. This builder-breaker design—where PAN participants build detectors while
+ELOQUENT participants craft novel generation and obfuscation methods~\cite{bevendorff:2024d}—ensures
+that submitted systems must be genuinely robust rather than merely fitting to known generator artifacts.
+
+Detecting AI-generated text is a well-studied problem with two dominant paradigms~\cite{bevendorff:2025b}.
+Zero-shot methods exploit statistical signals such as perplexity~\cite{mitchell:2023,bao:2023} or
+cross-entropy divergence between models~\cite{hans:2024,su:2023}. Supervised methods train classifiers
+on labeled corpora, achieving higher accuracy on known domains but often overfitting to specific
+generators~\cite{bevendorff:2024d}. Both approaches tend to degrade when texts are paraphrased or
+otherwise obfuscated, because their signal is typically rooted in surface-level distributional
+properties of a particular model.
+
+A key insight that motivates our work is that stylometric analysis—the computational study of
+authorship through measurable writing-style attributes—can capture features that are more
+stable under adversarial perturbation than raw token statistics. Human writing reflects
+individual cognitive processes, vocabulary habits, discourse preferences, and syntactic
+tendencies accumulated over a lifetime. LLMs, regardless of instructed persona, are ultimately
+constrained by their training distribution and generate text in ways that leave systematic,
+measurable traces across vocabulary, syntax, and discourse structure—traces that persist
+even when surface-level word choices are altered by paraphrase or style-mimicry prompts.
+
+This paper presents \textbf{RADAR} (\textbf{R}obust \textbf{A}dversarial-Resistant \textbf{D}etection
+with \textbf{A}daptive \textbf{R}easoning), a hybrid detection architecture that fuses deep
+contextual text representations with a rich set of handcrafted stylometric features through a
+cross-attention mechanism. RADAR comprises four interdependent modules:
+
+\begin{enumerate}
+  \item \textbf{ARSE} (Adaptive Reasoning Semantic Encoder): a ModernBERT-large encoder
+        that extracts contextual semantic representations from the input text.
+  \item \textbf{SLPE} (Statistical Linguistic Profile Extractor): a feature engineering
+        module that computes 38 normalized stylometric features across five linguistic
+        dimensions—vocabulary richness, syntactic complexity, discourse coherence, style
+        fingerprinting, and perplexity-based signals.
+  \item \textbf{Cross-Attention Fusion}: a multi-head cross-attention layer that allows the
+        semantic representation to selectively attend to the projected stylometric features,
+        followed by a fusion MLP.
+  \item \textbf{UACC} (Unified Authorship Classification Classifier): a linear classification
+        head that maps the fused representation to a binary authorship decision.
+\end{enumerate}
+
+We train RADAR using a two-stage curriculum: first with the encoder frozen (training only
+the SLPE projection, cross-attention, and classifier), then with all weights jointly
+fine-tuned. Our training data combines the official PAN-2026 corpus with a curated,
+adversarially augmented subset of the RAID benchmark~\cite{dugan:2024}, providing both
+in-domain and out-of-domain training signal.
+
+Our final submitted model achieves a mean PAN score of 0.978 on the combined held-out
+validation set—surpassing the Binoculars and Compression baselines by substantial margins
+and approaching the performance of the linear SVM on in-domain data while offering
+substantially better generalisation to adversarial examples.
+
+The remainder of this paper is organised as follows. Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:method} describes the RADAR architecture in detail.
+Section~\ref{sec:data} explains our data collection and preprocessing pipeline.
+Section~\ref{sec:experiments} outlines the experimental setup, training procedure, and ablation studies.
+Section~\ref{sec:results} presents and discusses the results.
+Section~\ref{sec:conclusion} concludes.

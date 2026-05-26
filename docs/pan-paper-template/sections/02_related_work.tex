@@ -1,0 +1,81 @@
+The literature on automated AI-text detection spans roughly two camps: \emph{statistical/unsupervised}
+methods that require no labelled data, and \emph{supervised} classifiers trained on paired
+human-versus-machine corpora. We briefly survey each and situate RADAR within this landscape.
+
+\subsection{Zero-Shot and Statistical Detection}
+
+The earliest approaches to automatic authorship verification treated the problem as a
+one-class classification task~\cite{koppel:2004}. Statistical compression-based methods
+model a text's regularity against a reference model: PPMd compression-based cosine
+similarity~\cite{sculley:2006,halvani:2017} computes how predictably a corpus model
+can encode an unknown document. These methods are inherently robust to topic drift
+but suffer on short texts and on cleverly paraphrased outputs.
+
+Perplexity-based detectors leverage the observation that LLMs assign higher probability
+to their own outputs than to human-written text. DetectGPT~\cite{mitchell:2023} exploits
+local probability curvature: AI-generated text tends to lie near local maxima of the model's
+probability surface. Fast-DetectGPT~\cite{bao:2023} accelerates this by using conditional
+probability curvature rather than explicit perturbation sampling. DetectLLM~\cite{su:2023}
+uses log-rank information from a surrogate language model. Binoculars~\cite{hans:2024}
+achieves strong zero-shot performance by cross-referencing perplexity and cross-perplexity
+from two related models, reducing the impact of topic-specific language complexity.
+
+A critical limitation of all purely statistical approaches is their dependence on a
+reference LM that should match the generator. When the generator is unknown—as in
+competitive shared tasks—performance degrades significantly~\cite{sadasivan:2023}.
+Moreover, adversarial attacks such as paraphrase and synonym substitution substantially
+reduce statistical signals because they alter the surface-level probability fingerprint
+while preserving the underlying content~\cite{ippolito:2020}.
+
+\subsection{Supervised Classification}
+
+Supervised approaches train discriminative models on labelled datasets. The linear SVM
+with TF-IDF features~\cite{bevendorff:2025} provided as the task baseline demonstrates
+that even simple bag-of-words models are surprisingly effective on curated in-domain
+corpora. However, they generalise poorly to out-of-distribution generators and to
+adversarially obfuscated texts.
+
+Fine-tuned transformer models have emerged as strong baselines. BERT- and RoBERTa-based
+classifiers achieve high accuracy on standard benchmarks such as
+TuringBench~\cite{uchendu:2021} and the datasets from the PAN 2024
+campaign~\cite{bevendorff:2024b}. The introduction of larger encoders—GPT2-based detectors,
+LLaMA fine-tunes—has extended performance further, but these models are prone to
+distribution shift when the test set comes from a different generator family than the
+training data~\cite{schuster:2020,sadasivan:2023}.
+
+A key insight from recent competitive results is that pure end-to-end neural approaches
+are not unambiguously superior to hybrid models that combine neural representations
+with handcrafted features. Stylometric features—vocabulary richness, syntactic
+complexity, function word distributions—tend to be more stable across paraphrase
+perturbations because they reflect deep properties of the generation process rather
+than surface token choices~\cite{bevendorff:2025b,uchendu:2020}.
+
+\subsection{Stylometric Analysis in AI Detection}
+
+Stylometry has a long history in authorship attribution and verification~\cite{koppel:2004,
+bevendorff:2019}. For AI detection, the stylometric hypothesis is that LLMs, despite
+persona-mimicry prompting, exhibit systematic statistical regularities that differ from
+human writing: higher lexical homogeneity, more regular sentence length distributions,
+lower pronoun density, and more uniform paragraph coherence~\cite{jakesch:2023,
+schuster:2020}. These properties persist under paraphrase because they reflect the
+model's training-time inductive biases rather than its surface vocabulary.
+
+\subsection{Multi-Source Training and Robustness}
+
+The PAN 2024 overview~\cite{bevendorff:2024d} identified domain shift and adversarial
+obfuscation as the two primary failure modes of current detectors. RAID~\cite{dugan:2024}
+was introduced specifically to study this: a benchmark of 5.6~million samples from 11~LLMs
+across 11~domains, with 12 adversarial attack types including paraphrase, synonym substitution,
+and homoglyph character substitution. Training on RAID has been shown to substantially
+improve robustness, but only when the training distribution is appropriately balanced.
+
+\subsection{Positioning RADAR}
+
+RADAR is designed to directly address the key challenges identified above. By fusing
+deep semantic representations from a state-of-the-art encoder with handcrafted
+stylometric features through a cross-attention mechanism, RADAR captures both
+surface-level patterns and deeper structural regularities. The two-stage training
+curriculum—frozen encoder followed by full fine-tuning on a balanced multi-source
+corpus—provides strong initialisation before allowing end-to-end adaptation. This
+stands in contrast to single-stage approaches that either sacrifice stylometric
+signals (pure neural) or discard contextual reasoning (pure stylometric).

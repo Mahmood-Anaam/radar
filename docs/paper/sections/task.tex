@@ -1,0 +1,37 @@
+%% sections/task.tex
+
+\section{Task Description}
+\label{sec:task}
+
+\subsection{Overview}
+
+The \textit{Voight-Kampff Generative AI Authorship Verification} task at PAN 2026 is a binary classification challenge. Participants receive a single text and must predict whether it was authored by a human (label~0) or by a language model (label~1). Unlike a straightforward AI detection benchmark, the 2026 edition introduces a deliberate complication: the LLMs are instructed to change their style and mimic a specific human author. Furthermore, the held-out test set contains surprise elements—novel models not seen during training and previously unseen obfuscation methods—to stress-test the generalisability and adversarial robustness of submitted systems.
+
+The task is organised in collaboration with the ELOQUENT Lab, which runs a ``builder-breaker'' track in which ELOQUENT participants develop new generation and obfuscation strategies specifically designed to defeat PAN detectors. This adversarial dynamic makes the 2026 edition substantially more challenging than those of earlier years.
+
+\subsection{Data Format}
+
+The official training and validation data is provided as newline-delimited JSON. Each record contains: a unique \texttt{id}, the \texttt{text} to be classified, the generating \texttt{model} (or the string \texttt{"human"}), a binary \texttt{label} (0 = human, 1 = AI), and a \texttt{genre} field taking values \texttt{essays}, \texttt{news}, or \texttt{fiction}. The official training split contains 23,707 records, while the validation split contains 3,589 records. The genre distribution is skewed: fiction accounts for approximately 62\% of training texts, news for 23\%, and essays for the remaining 15\%.
+
+For prediction, the test set provides only \texttt{id} and \texttt{text}. Participants must produce a \texttt{*.jsonl} output file in which each line contains an \texttt{id} and a \texttt{label} score in $[0,1]$. Scores below 0.5 are interpreted as human, scores above 0.5 as AI, and a score of exactly 0.5 as ``undecidable.'' Participants are explicitly encouraged to abstain with 0.5 rather than make a wrong confident prediction.
+
+\subsection{Evaluation Metrics}
+
+The organisers evaluate submissions with five complementary metrics:
+
+\begin{itemize}
+  \item \textbf{ROC-AUC}: Area under the Receiver Operating Characteristic curve; measures discrimination ability across all thresholds.
+  \item \textbf{Brier}: Complement of the Brier score (mean squared loss); measures calibration of probability estimates.
+  \item \textbf{C@1}: A modified accuracy that assigns non-answers (score~$= 0.5$) the average accuracy of the answered cases, rewarding well-calibrated abstentions.
+  \item \textbf{F1}: Harmonic mean of precision and recall at the 0.5 threshold.
+  \item \textbf{F0.5u}: A precision-weighted F-measure that treats non-answers as false negatives, penalising excessive abstention.
+  \item \textbf{Mean}: Arithmetic mean of the five metrics above; used as the primary ranking criterion.
+\end{itemize}
+
+\subsection{Baselines}
+
+The organisers provide three reference baselines: (1) a linear SVM with TF-IDF features, (2) a compression-based cosine similarity using PPMd~\cite{sculley:2006}, and (3) Binoculars~\cite{hans:2024}, a zero-shot LM-perplexity detector. On the official PAN-2026 validation set, the TF-IDF SVM achieves a mean score of 0.978, and Binoculars achieves 0.877.
+
+\subsection{Submission Protocol}
+
+Systems are submitted as Docker images through the TIRA platform~\cite{froebe:2023b}. Containers must be fully self-contained and cannot access the internet during evaluation. The container takes as input the path to a \texttt{dataset.jsonl} file and an output directory, and writes a single \texttt{*.jsonl} prediction file. Critically, all test cases must be processed independently, with no information leakage between records.

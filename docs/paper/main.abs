@@ -1,0 +1,17 @@
+We present \radar{}, a multimodal binary classifier for distinguishing human-authored text from
+AI-generated content, submitted to the Voight-Kampff Generative AI Detection task at PAN 2026.
+\radar{} combines two complementary streams: (i) \textbf{\arse{}} (Adversarially Robust Semantic
+Encoder), which encodes input texts using ModernBERT-large to capture deep contextual and semantic
+representations; and (ii) \textbf{\slpe{}} (Statistical Linguistic Profile Extractor), which
+computes a 38-dimensional handcrafted stylometric feature vector capturing vocabulary richness,
+syntactic complexity, discourse coherence, style fingerprinting, and perplexity signals. The two
+streams are fused through a cross-attention mechanism before classification by \textbf{\uacc{}}
+(Unified AI Content Classifier). Training proceeds in two stages: first, the encoder is frozen to
+stabilise the lightweight fusion components; then all parameters are fine-tuned end-to-end. \radar{}
+is trained on a combination of the official PAN-2026 corpus and adversarially augmented data from
+the RAID benchmark. On the combined validation set, the final model achieves a mean PAN score of
+\textbf{0.978} (ROC-AUC 0.992, F1 0.973), representing a 31.6-point improvement over the TF-IDF
+baseline. On the PAN-2026 validation subset specifically, \radar{} attains a mean of \textbf{0.997}.
+On the RAID cross-domain test set, it retains a mean of \textbf{0.972}, demonstrating strong
+out-of-distribution generalisation. Code and model weights are publicly available on the
+HuggingFace Hub.

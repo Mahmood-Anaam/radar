@@ -1,0 +1,13 @@
+%% sections/conclusion.tex
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented RADAR, a multimodal system for distinguishing human-authored texts from AI-generated content, submitted to the Voight-Kampff Generative AI Detection task at PAN 2026. RADAR couples a powerful pre-trained transformer encoder (ModernBERT-large) with a lightweight statistical linguistic profiler through a cross-attention fusion layer. The system is trained in two stages: an initial encoder-frozen phase that stabilises the lightweight components, followed by full end-to-end fine-tuning that allows the encoder to adapt to the detection objective.
+
+Our main findings can be summarised as follows. First, the combination of deep contextual representations and handcrafted stylometric features is mutually beneficial: each stream captures aspects of AI authorship that the other misses, and cross-attention fusion allows the semantic stream to selectively weigh stylometric evidence. Second, a diverse training corpus is essential for generalisation: augmenting the organiser-provided PAN-2026 data with adversarially perturbed RAID examples dramatically reduces the domain gap and improves out-of-distribution robustness. Third, two-stage training is an effective strategy for fine-tuning large encoders in low-data regimes: Stage~1 produces a stable initialisation that prevents catastrophic forgetting during Stage~2 fine-tuning.
+
+RADAR achieves a mean PAN score of 0.978 on the combined validation set and 0.997 on the PAN-2026 validation subset, exceeding the organiser-provided TF-IDF baseline by over 30 percentage points. On the RAID cross-domain test set, RADAR retains a mean of 0.972, demonstrating that the learned representations transfer well to unseen domains and attack conditions.
+
+\textbf{Limitations and Future Work.} Several avenues remain open for improvement. Short texts ($< 100$ words) challenge both streams, and extending stylometric features with sentence-level discourse models or retrieval-augmented context could help. The paraphrase attack class remains the hardest to handle; adversarial training using a dedicated paraphrase model may close this gap. Finally, the current architecture uses a fixed 512-token window; adapting RADAR to exploit ModernBERT's full 8,192-token capacity for long-form documents is a natural extension. As LLMs continue to advance and new obfuscation strategies emerge, maintaining a live model hub with periodic re-training on fresh data will be essential to sustain detection performance over time.
+

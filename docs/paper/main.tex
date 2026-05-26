@@ -1,0 +1,92 @@
+\documentclass[twocolumn]{ceurart}
+
+%% ---- packages and custom commands ----
+\input{packages}
+
+%% ---- Graphics path ----
+\graphicspath{{images/}}
+
+\begin{document}
+
+%% ---- Copyright / conference info ----
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0
+  International (CC BY 4.0).}
+
+\conference{CLEF 2026 Working Notes, September 2026, Évora, Portugal}
+
+%% ---- Title ----
+\title{RADAR: A Multimodal Approach to Adversarially Robust Generative AI Text Detection}
+\title[mode=sub]{Notebook for the PAN Lab at CLEF 2026}
+
+%% ---- Author(s) ----
+\author[1]{Yusr Alqarni}[%
+  email=yusralqarni@gmail.com,
+]
+\address[1]{Al-Baha University, Al-Baha, Saudi Arabia}
+\cortext[1]{Corresponding author.}
+
+%% ---- Abstract ----
+\begin{abstract}
+We present \radar{}, a multimodal binary classifier for distinguishing human-authored text from
+AI-generated content, submitted to the Voight-Kampff Generative AI Detection task at PAN 2026.
+\radar{} combines two complementary streams: (i) \textbf{\arse{}} (Adversarially Robust Semantic
+Encoder), which encodes input texts using ModernBERT-large to capture deep contextual and semantic
+representations; and (ii) \textbf{\slpe{}} (Statistical Linguistic Profile Extractor), which
+computes a 38-dimensional handcrafted stylometric feature vector capturing vocabulary richness,
+syntactic complexity, discourse coherence, style fingerprinting, and perplexity signals. The two
+streams are fused through a cross-attention mechanism before classification by \textbf{\uacc{}}
+(Unified AI Content Classifier). Training proceeds in two stages: first, the encoder is frozen to
+stabilise the lightweight fusion components; then all parameters are fine-tuned end-to-end. \radar{}
+is trained on a combination of the official PAN-2026 corpus and adversarially augmented data from
+the RAID benchmark. On the combined validation set, the final model achieves a mean PAN score of
+\textbf{0.978} (ROC-AUC 0.992, F1 0.973), representing a 31.6-point improvement over the TF-IDF
+baseline. On the PAN-2026 validation subset specifically, \radar{} attains a mean of \textbf{0.997}.
+On the RAID cross-domain test set, it retains a mean of \textbf{0.972}, demonstrating strong
+out-of-distribution generalisation. Code and model weights are publicly available on the
+HuggingFace Hub.
+\end{abstract}
+
+%% ---- Keywords ----
+\begin{keywords}
+  generative AI detection \sep
+  authorship verification \sep
+  stylometry \sep
+  transformer fine-tuning \sep
+  multimodal fusion \sep
+  PAN 2026
+\end{keywords}
+
+\maketitle
+
+%% ---- Paper sections ----
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/task}
+\input{sections/methodology}
+\input{sections/experiments}
+\input{sections/results}
+\input{sections/conclusion}
+
+%% ---- Acknowledgements ----
+\begin{acknowledgments}
+  The author thanks the PAN 2026 organising committee for the shared-task infrastructure and the
+  TIRA evaluation platform team~\cite{froebe:2023b} for reliable Docker-based evaluation. Sincere
+  gratitude also goes to the RAID dataset creators~\cite{dugan:2024} for releasing a large-scale
+  adversarial benchmark under an open licence, and to the HuggingFace team for the Transformers
+  library~\cite{wolf:2020} and model hosting.
+\end{acknowledgments}
+
+%% ---- Declaration on Generative AI ----
+\section*{Declaration on Generative AI}
+During the preparation of this work, the author used AI-assisted writing tools for grammar and
+spelling checks and for generating initial boilerplate code in the data-preprocessing pipeline.
+After using these tools, the author reviewed and edited all content as needed and takes full
+responsibility for the publication's content. All scientific claims, experimental design, analysis,
+and interpretations are entirely the work of the author.
+
+%% ---- Bibliography ----
+\bibliography{references}
+
+\end{document}

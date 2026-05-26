@@ -216,3 +216,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# vscode settings
+.vscode/
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.gz
+*.synctex.gz
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.gz
+*.synctex.gz

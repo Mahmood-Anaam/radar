@@ -1,32 +1,32 @@
 flowchart LR
     subgraph PAN26["PAN-2026 Official Data\n(Zenodo)"]
         direction TB
-        P_TRAIN["Train Split\n23,707 samples\n(Essays, News, Fiction)"]
-        P_VAL["Validation Split\n3,589 samples"]
+        P_TRAIN["Training Split\n(Essays, News, Fiction)"]
+        P_VAL["Validation Split"]
     end
 
     subgraph RAID["RAID External Dataset\n(HuggingFace Hub)"]
         direction TB
-        R_RAW["5.6M rows\n11 LLMs × 11 Domains\n12 Attack Types"]
-        R_FILT["Genre Filter\n(news, books, poetry)\n2.24M rows"]
-        R_ATT["Attack Filter\n(none, homoglyph, synonym,\nparaphrase, alt_spelling)\n933K rows"]
-        R_SPLIT["Stratified Split 60/40\nDev: 559,860 | Test: 373,240"]
-        R_SAMPLE["Balanced Sample\nDev: 30,000 | Test: 10,000"]
+        R_RAW["Raw Dataset\n(Multiple LLMs × Domains × Attack Types)"]
+        R_FILT["Genre Filtering\n(Aligned Genres)"]
+        R_ATT["Attack Filtering\n(Selected Obfuscation Types)"]
+        R_SPLIT["Stratified Split\n(Dev / Test)"]
+        R_SAMPLE["Balanced Sampling"]
         R_RAW --> R_FILT --> R_ATT --> R_SPLIT --> R_SAMPLE
     end
 
     subgraph PREPROC["Preprocessing"]
         direction TB
-        PII["PII Removal\n(email, phone, @mentions)"]
-        DEDUP["Deduplication &\nLength Filter (≥50 chars)"]
+        PII["PII Removal"]
+        DEDUP["Deduplication &\nLength Filter"]
         LOWER["Lowercasing"]
     end
 
     subgraph FINAL["Final Splits"]
         direction TB
-        TRAIN_F["Combined Train\n38,503 samples\nPAN26(23,682) + RAID-Dev(14,821)"]
-        VAL_F["Combined Val\n18,423 samples\nPAN26(3,589) + RAID-Dev(14,834)"]
-        TEST_F["Test Set\n10,000 samples\nRAID-Test (balanced 50/50)"]
+        TRAIN_F["Training Set\n(PAN-2026 + RAID Dev)"]
+        VAL_F["Validation Set\n(PAN-2026 + RAID Dev)"]
+        TEST_F["Test Set\n(RAID Test — balanced)"]
     end
 
     P_TRAIN --> PII

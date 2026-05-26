@@ -27,10 +27,10 @@ than random initialisation of the non-encoder components.
 
 \paragraph{Stage 2 — Full Fine-Tuning (Exp.~2).}
 In the second stage, the Stage~1 checkpoint is loaded and all encoder weights are
-unfrozen. All 399.7~million parameters are jointly optimised. The lower learning rate
-relative to Stage~1 (both use $2 \times 10^{-5}$ due to the small batch size and
-cosine scheduler) prevents catastrophic forgetting of the encoder's pre-trained
-representations while allowing targeted fine-tuning on the authorship signal.
+unfrozen. All 399.7~million parameters are jointly optimised. The learning rate is kept
+at $2 \times 10^{-5}$ with cosine decay to prevent catastrophic forgetting of the
+encoder's pre-trained representations while allowing targeted fine-tuning on the
+authorship signal.
 
 \subsection{Ablation Experiments}
 

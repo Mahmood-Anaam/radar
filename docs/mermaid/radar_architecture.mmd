@@ -4,31 +4,31 @@ flowchart TD
     end
 
     subgraph ARSE["ARSE — Adaptive Reasoning Semantic Encoder"]
-        TOK["ModernBERT-large Tokenizer\n(max_length = 512)"]
-        ENC["ModernBERT-large\n(28 layers, hidden = 1024)"]
-        CLS["CLS Token Embedding\nh_semantic ∈ ℝ¹⁰²⁴"]
+        TOK["Tokenizer"]
+        ENC["Transformer Encoder"]
+        CLS["Semantic Embedding"]
         TOK --> ENC --> CLS
     end
 
     subgraph SLPE["SLPE — Statistical Linguistic Profile Extractor"]
         direction TB
-        F1["Vocabulary Richness\n(8 features)"]
-        F2["Syntactic Complexity\n(10 features)"]
-        F3["Discourse Coherence\n(8 features)"]
-        F4["Style Fingerprinting\n(7 features)"]
-        F5["Perplexity Signals\n(5 features)"]
-        SVEC["Style Vector ∈ ℝ³⁸"]
+        F1["Vocabulary Richness"]
+        F2["Syntactic Complexity"]
+        F3["Discourse Coherence"]
+        F4["Style Fingerprinting"]
+        F5["Perplexity Signals"]
+        SVEC["Style Vector"]
         F1 & F2 & F3 & F4 & F5 --> SVEC
-        SPROJ["Style Projection MLP\nLinear → LayerNorm → GELU\nh_style ∈ ℝ¹²⁸"]
+        SPROJ["Style Projection MLP"]
         SVEC --> SPROJ
     end
 
     subgraph FUSION["Cross-Attention Fusion Layer"]
-        PROJ2SEM["Linear Projection\nh_style → ℝ¹⁰²⁴"]
-        CATTN["Multi-Head Cross-Attention\n(8 heads)\nQuery = h_semantic\nKey/Value = projected style"]
+        PROJ2SEM["Linear Projection"]
+        CATTN["Multi-Head Cross-Attention\nQuery = Semantic\nKey / Value = Style"]
         RESNORM["Residual + LayerNorm"]
-        CONCAT["Concatenate\n[attended, h_style] ∈ ℝ¹¹⁵²"]
-        FMLP["Fusion MLP\nLinear → LayerNorm → GELU\nh_fused ∈ ℝ⁵¹²"]
+        CONCAT["Concatenate Representations"]
+        FMLP["Fusion MLP"]
         PROJ2SEM --> CATTN
         CATTN --> RESNORM
         RESNORM --> CONCAT
@@ -36,13 +36,13 @@ flowchart TD
     end
 
     subgraph UACC["UACC — Unified Authorship Classification Classifier"]
-        CLF["Linear Classifier\nh_fused → logit ∈ ℝ¹"]
-        SIG["Sigmoid\nconfidence score ∈ [0,1]"]
+        CLF["Linear Classifier"]
+        SIG["Sigmoid Activation"]
         CLF --> SIG
     end
 
     subgraph OUTPUT["Output"]
-        SCORE["Confidence Score\n0 = Human  |  1 = AI"]
+        SCORE["Confidence Score\nHuman  ←  0 · · · 1  →  AI"]
     end
 
     T --> TOK

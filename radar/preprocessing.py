@@ -18,10 +18,13 @@ def preprocess(text: str) -> str:
     """
     Apply the same preprocessing pipeline used during training:
 
-    1. Replace e-mail addresses with ``[EMAIL]``.
-    2. Replace ``@username`` mentions with ``[USER]``.
-    3. Replace phone numbers with ``[PHONE]``.
+    1. Replace e-mail addresses with [EMAIL].
+    2. Replace ``@username`` mentions with [USER].
+    3. Replace phone numbers with [PHONE].
     4. Lowercase and strip leading / trailing whitespace.
+
+    Note: substitution tokens are uppercased before the final lowercase pass,
+    so the output will contain ``[email]``, ``[user]``, and ``[phone]``.
     """
     text = _EMAIL_RE.sub("[EMAIL]", text)
     text = _USER_RE.sub("[USER]", text)

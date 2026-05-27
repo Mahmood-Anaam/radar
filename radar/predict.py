@@ -11,14 +11,13 @@ Arguments:
     OUTPUT_DIRECTORY  Directory where predictions.jsonl will be written.
 
 The model weights are loaded from the HuggingFace Hub repository
-``******/RADAR``.  When running on the TIRA platform the model is
-pre-mounted via ``--mount-hf-model ******/RADAR``; no internet
+``MahmoodAnaam/RADAR``.  When running on the TIRA platform the model is
+pre-mounted via ``--mount-hf-model MahmoodAnaam/RADAR``; no internet
 connection is required at evaluation time.
 """
 
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -34,12 +33,13 @@ from radar.modeling import RADARModel, registers
 registers()
 
 from radar.features import StylemetricFeatureExtractor, extract_features_batch  # noqa: E402
+from radar.preprocessing import preprocess  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-MODEL_NAME = os.environ.get("RADAR_MODEL", "******/RADAR")
+MODEL_NAME = os.environ.get("RADAR_MODEL", "MahmoodAnaam/RADAR")
 OUTPUT_FILE = "predictions.jsonl"
 MAX_LENGTH = 512
 BATCH_SIZE = int(os.environ.get("RADAR_BATCH_SIZE", "16"))
@@ -47,31 +47,6 @@ BATCH_SIZE = int(os.environ.get("RADAR_BATCH_SIZE", "16"))
 # c@1 metric, which rewards abstention when confidence is low rather than
 # penalising an incorrect hard decision.  Value matches the PAN baselines.
 C_AT_1_THRESHOLD = 0.01
-
-# ---------------------------------------------------------------------------
-# Preprocessing  (identical to training-time preprocessing)
-# ---------------------------------------------------------------------------
-
-_EMAIL_RE = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
-_USER_RE = re.compile(r"@[A-Za-z0-9_-]+")
-_PHONE_RE = re.compile(
-    r"(\+?\d{1,3})?[\s\*\.\-]?\(?\d{1,4}\)?[\s\*\.\-]?\d{2,4}[\s\*\.\-]?\d{2,6}"
-)
-
-
-def preprocess(text: str) -> str:
-    """
-    Apply the same preprocessing pipeline used during training:
-
-    1. Replace e-mail addresses with ``[EMAIL]``.
-    2. Replace ``@username`` mentions with ``[USER]``.
-    3. Replace phone numbers with ``[PHONE]``.
-    4. Lowercase and strip leading / trailing whitespace.
-    """
-    text = _EMAIL_RE.sub("[EMAIL]", text)
-    text = _USER_RE.sub("[USER]", text)
-    text = _PHONE_RE.sub(" [PHONE]", text).replace("  [PHONE]", " [PHONE]")
-    return text.lower().strip()
 
 
 # ---------------------------------------------------------------------------

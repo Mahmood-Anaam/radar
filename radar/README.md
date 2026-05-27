@@ -74,10 +74,7 @@ tira-cli dataset-submission \
 ```
 
 Or download the JSONL directly from the PAN GitHub repository:
-
-```
-https://github.com/pan-webis-de/pan-code/tree/master/clef26/generative-authorship-verification/pan26-generative-ai-detection-smoke-test
-```
+[pan26-generative-ai-detection-smoke-test](https://github.com/pan-webis-de/pan-code/tree/master/clef26/generative-authorship-verification/pan26-generative-ai-detection-smoke-test)
 
 ### 3 — Run the predictor locally
 

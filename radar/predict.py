@@ -43,6 +43,9 @@ MODEL_NAME = os.environ.get("RADAR_MODEL", "******/RADAR")
 OUTPUT_FILE = "predictions.jsonl"
 MAX_LENGTH = 512
 BATCH_SIZE = int(os.environ.get("RADAR_BATCH_SIZE", "16"))
+# Scores within this margin of 0.5 are snapped to 0.5 (abstain) to improve the
+# c@1 metric, which rewards abstention when confidence is low rather than
+# penalising an incorrect hard decision.  Value matches the PAN baselines.
 C_AT_1_THRESHOLD = 0.01
 
 # ---------------------------------------------------------------------------
@@ -94,8 +97,17 @@ def main(input_file: str, output_directory: str) -> None:
 
     # ---- Load model and tokenizer ----
     print(f"[RADAR] loading model from '{MODEL_NAME}' ...", file=sys.stderr)
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = RADARModel.from_pretrained(MODEL_NAME)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = RADARModel.from_pretrained(MODEL_NAME)
+    except Exception as exc:
+        print(
+            f"[RADAR] ERROR: failed to load model/tokenizer from '{MODEL_NAME}': {exc}\n"
+            "Ensure the model is pre-mounted with --mount-hf-model on TIRA, "
+            "or set the RADAR_MODEL env var to a local path.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     model.eval()
     model.to(device)
     print("[RADAR] model loaded.", file=sys.stderr)

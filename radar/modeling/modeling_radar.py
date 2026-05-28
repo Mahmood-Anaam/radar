@@ -205,7 +205,6 @@ class RADARModel(PreTrainedModel):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         style_features: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> RADAROutput:
         """
@@ -216,14 +215,11 @@ class RADARModel(PreTrainedModel):
         input_ids      : [B, seq_len]
         attention_mask : [B, seq_len]
         style_features : [B, 38]  optional stylometric features
-        labels         : [B]  float labels 0.0 / 1.0 for loss computation
 
         Returns
         -------
         RADAROutput with fields:
-          - loss        (if labels provided) weighted BCE on calibrated score
           - logits      raw logit from primary head (before sigmoid)
-          - score       calibrated probability score
           - h_fused     fused representation (exposed for auxiliary losses)
         """
         h_fused = self.encode(input_ids, attention_mask, style_features)

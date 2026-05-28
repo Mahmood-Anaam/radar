@@ -220,6 +220,9 @@ __marimo__/
 # vscode settings
 .vscode/
 
+# tests notebook
+tests.ipynb
+
 # LaTeX auxiliary files
 *.aux
 *.bbl

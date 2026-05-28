@@ -10,9 +10,8 @@ WORKDIR /opt/radar
 RUN set -x \
     && python3 -m pip config set global.break-system-packages true \
     && python3 -m pip install --no-cache . \
-    && python3 -m pip install --no-cache --no-build-isolation flash-attn \
     && rm -rf ./build ./*.egg-info
 
-ENV HF_HUB_OFFLINE=1
+
 ENV CUDA_VISIBLE_DEVICES="0"
-ENTRYPOINT ["/usr/local/bin/radar", "--input-directory", "$inputDataset/dataset.jsonl", "--output-directory", "$outputDir"]
+ENTRYPOINT ["/usr/local/bin/radar"]

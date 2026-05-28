@@ -1,0 +1,13 @@
+flowchart TB
+    A[Input Text] --> B[Preprocessing]
+    B --> C[Tokenizer]
+    B --> D[Stylometric Extractor]
+
+    C --> E[ARSE\nModernBERT-large Encoder]
+    D --> F[SLPE\nProjection Layer]
+
+    E -->|CLS Token\nh_semantic| G[Cross-Attention\nFusion]
+    F -->|h_style_proj| G
+
+    G --> H[UACC\nClassification Head]
+    H --> I[AI Score\n0–1]

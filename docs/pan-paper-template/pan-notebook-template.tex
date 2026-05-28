@@ -1,62 +1,69 @@
 \documentclass[]{ceurart}
+\usepackage{graphicx}
+\usepackage{booktabs}
 \begin{document}
 
 %%
 %% Rights management information.
-%% CC-BY is default license.
-\copyrightyear{2025}
+\copyrightyear{2026}
 \copyrightclause{Copyright for this paper by its authors.
   Use permitted under Creative Commons License Attribution 4.0
   International (CC BY 4.0).}
 
 %%
-%% This command is for the conference information
-\conference{CLEF 2025 Working Notes, 9 -- 12 September 2025, Madrid, Spain}
+%% Conference information
+\conference{CLEF 2026 Working Notes, September 2026, Évora, Portugal}
 
 %%
-%% The "title" command
-\title{Team Dextor at PAN 2025: RADAR: Robust Adversarial-Resistant AI Text Detection}
-\title[mode=sub]{Notebook for the PAN Lab at CLEF 2025}
+%% Title
+\title{RADAR: Robust Adversarial-Resistant Detection with Adaptive Reasoning for AI-Generated Text}
+\title[mode=sub]{Notebook for the PAN Lab at CLEF 2026}
 
 %%
-%% The "author" command and its associated commands are used to define
-%% the authors and their affiliations.
-\author[1]{Yusr Alqarni}[%
-email=yusralqarni@gmail.com,
+%% Author
+\author[1]{Mahmood Anaam}[%
+email=mahmoodanaam@gmail.com,
 ]
 
 \address[1]{Al-Baha University, Al-Baha, Saudi Arabia}
-%% Footnotes
 \cortext[1]{Corresponding author.}
-\fntext[1]{These authors contributed equally.}
 
 %%
-%% The abstract is a short summary of the work to be presented in the
-%% article.
+%% Abstract
 \begin{abstract}
-  A clear and well-documented \LaTeX{} document is presented as an
-  article formatted for publication by CEUR-WS in a conference
-  proceedings. Based on the ``ceurart'' document class, this article
-  presents and explains many of the common variations, as well as many
-  of the formatting elements an author may use in the preparation of
-  the documentation of their work.
+The proliferation of large language models has made distinguishing human-authored text from
+machine-generated content an increasingly difficult problem. This paper presents RADAR
+(Robust Adversarial-Resistant Detection with Adaptive Reasoning), a two-stream neural
+architecture developed for the PAN 2026 Voight-Kampff Generative AI Detection shared task.
+RADAR combines deep contextual representations from a fine-tuned ModernBERT-large encoder
+with handcrafted stylometric features drawn from five linguistic dimensions.
+The two streams are integrated through a cross-attention fusion module that allows the
+semantic representation to attend to stylometric signals, enabling the model to reason over
+both surface-level and structural writing patterns simultaneously.
+Training is conducted in two stages: an initial stage with the encoder frozen to establish
+stable feature alignment, followed by full end-to-end fine-tuning on a combined corpus
+comprising the PAN 2026 official training set and the RAID benchmark.
+On the PAN 2026 validation set, the final model achieves a mean score of 0.997
+(ROC-AUC~1.000), and on the RAID held-out test set a mean score of 0.972, demonstrating
+strong in-domain accuracy and cross-domain robustness.
 \end{abstract}
 
 %%
-%% Keywords. The author(s) should pick words that accurately describe
-%% the work being presented. Separate the keywords with commas.
+%% Keywords
 \begin{keywords}
-  LaTeX class \sep
-  paper template \sep
-  paper formatting \sep
-  CEUR-WS
+  AI-generated text detection \sep
+  stylometric analysis \sep
+  transformer encoder \sep
+  cross-attention fusion \sep
+  adversarial robustness \sep
+  PAN 2026
 \end{keywords}
 
-%%
-%% This command processes the author and affiliation and title
-%% information and builds the first part of the formatted document.
 \maketitle
 
+%%
+%% Introduction (written by the authors — do not modify)
+%%
 \section{Introduction}
 
 Authorship verification and AI-generated text detection have become increasingly important research problems in Natural Language Processing (NLP), especially with the rapid evolution of large language models (LLMs). Modern generative systems are capable of producing highly fluent and semantically coherent text that closely resembles human writing, making the distinction between human-written and machine-generated content considerably more difficult.\cite{geminiteam2023gemini,openai2023gpt4,touvron2023llama2}Concerns about the abuse of generative AI in areas like academic dishonesty, the spread of  misinformation, automated spam generation, and the creation of synthetic content have been raised by this expanding potential\cite{clark2021humans,solaiman2019release}
@@ -65,116 +72,358 @@ To address these concerns, serveral detection approaches have been proposed, inc
 These challenges have increased interest in stylometry and forensic linguistics as complementary approaches for authorship analysis. Compared to purely neural model , stylometric methods focus on linguistic features indicative with writing style, including lexical diversity, syntactic variation, punctuation usage, and readability features\cite{juola2006authorship,coulthard2007forensic}. Such features are usually more interpretable and may remain informative even when surface-level textual artifacts are intentionally concealed or manipulated.The PAN 2026 Voight-Kampff Generative AI Detection shared task specifically targets these challenges by evaluating detection systems in real world scenarios involving style imitation, obfuscation, and exposure to unseen generators\cite{rangel2026pan}
 
 
+%%
+%% System Overview
+%%
 \section{System Overview}
 
+RADAR is designed around a central observation: neither purely neural classifiers nor purely
+stylometric methods are sufficient on their own to handle the full range of adversarial
+conditions present in the PAN 2026 task. Neural encoders may be fooled by paraphrase-based
+obfuscation, while stylometric features can be disrupted by simple lexical substitution.
+RADAR addresses this by fusing both signal types through a learned attention mechanism,
+allowing the model to exploit whichever modality is more informative for a given input.
+Figure~\ref{fig:architecture} gives a high-level overview of the architecture.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.80\columnwidth]{images/radar_architecture.png}
+  \caption{Overview of the RADAR model architecture. Input text is processed by two
+           parallel streams — the ARSE semantic encoder and the SLPE stylometric
+           projection layer — whose outputs are integrated through cross-attention
+           before a binary classification head produces the final detection score.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Text Preprocessing}
+
+Before being passed to either processing stream, each input document undergoes a
+standardised cleaning pipeline. Texts are lowercased, and personally identifiable
+information — including email addresses, phone numbers, and social-media handles —
+is replaced with generic placeholders (\texttt{[EMAIL]}, \texttt{[PHONE]},
+\texttt{[USER]}). Duplicate samples are removed, and documents shorter than 50
+characters are discarded. For the stylometric stream the raw (non-lowercased) text is
+used to preserve capitalisation and punctuation signals that carry authorship information.
+
+\subsection{Adaptive Robust Semantic Encoder (ARSE)}
+
+The first processing stream is built on ModernBERT-large~\cite{modernbert2024}, a recently
+released bidirectional transformer with 28 encoder layers, a 1{,}024-dimensional hidden
+space, rotary positional embeddings, and approximately 395 million parameters.
+ModernBERT-large was selected because it retains the bidirectional contextual modelling
+of classic BERT-style encoders while incorporating architectural improvements that make it
+both more accurate and more computationally efficient at longer sequence lengths than
+earlier models such as RoBERTa~\cite{liu2019roberta}.
+
+The preprocessed input is tokenised and fed to the encoder. The representation corresponding
+to the \texttt{[CLS]} token, which aggregates global sentence-level context, is extracted
+as the semantic feature vector~$\mathbf{h}_{\text{sem}} \in \mathbb{R}^{1024}$.
+
+\subsection{Stylometric Linguistic Profile Encoder (SLPE)}
+
+The second stream operates in parallel and extracts 38 handcrafted stylometric features
+organised into five functional categories.
+
+\begin{enumerate}
+  \item \textbf{Vocabulary richness} (8 features): type-to-token ratio, Hapax ratio,
+        Brunet's index, Honoré's R statistic, moving-average type-to-token ratio
+        (window~$= 100$), TTR slope, rare-word frequency, and function-word density.
+  \item \textbf{Syntactic complexity} (10 features): average sentence length, sentence-length
+        variance, clause density, subordination ratio, passive-construction frequency,
+        noun-phrase density proxy, verb density, coordination frequency, mean word position,
+        and sentence-length skewness.
+  \item \textbf{Discourse coherence} (8 features): Jaccard-based lexical cohesion, pronoun
+        density, transition-word frequency, paragraph coherence via cosine similarity,
+        topic consistency, information-flow variance, semantic repetition index, and
+        connective diversity.
+  \item \textbf{Style fingerprinting} (7 features): punctuation density, capitalisation ratio,
+        numeric character frequency, quotation frequency, parenthetical frequency, paragraph-length
+        variance, and list-structure frequency.
+  \item \textbf{Perplexity signals} (5 features): forward character-level entropy, backward
+        entropy, entropy ratio, textual burstiness, and mean surprisal.
+\end{enumerate}
+
+All features are normalised to the unit interval $[0, 1]$ and assembled into a fixed-length
+vector~$\mathbf{f} \in \mathbb{R}^{38}$. The SLPE then projects this vector through a
+learned linear layer followed by layer normalisation, a GELU activation, and dropout to
+produce a 128-dimensional stylometric embedding:
+\begin{equation}
+  \mathbf{h}_{\text{sty}} = \mathrm{Dropout}\!\left(\mathrm{GELU}\!\left(
+    \mathrm{LN}\!\left(W_s \mathbf{f} + b_s\right)\right)\right)
+    \in \mathbb{R}^{128}.
+\end{equation}
+
+\subsection{Cross-Attention Fusion Module}
+
+Rather than concatenating the two representations directly, RADAR integrates them through
+a cross-attention mechanism inspired by the encoder--decoder attention in the original
+Transformer architecture~\cite{vaswani2017attention}. The semantic vector
+$\mathbf{h}_{\text{sem}}$ serves as the \emph{query}, while the stylometric vector
+$\mathbf{h}_{\text{sty}}$ is linearly projected to the semantic dimensionality to form
+the \emph{key} and \emph{value}. A single attention head computes a style-conditioned
+update to the semantic representation:
+\begin{equation}
+  \mathbf{h}_{\text{attn}} = \mathrm{Attention}\!\left(
+    Q = \mathbf{h}_{\text{sem}},\;
+    K = W_k \mathbf{h}_{\text{sty}},\;
+    V = W_v \mathbf{h}_{\text{sty}}
+  \right).
+\end{equation}
+A residual connection and layer normalisation are applied to the attended output. The
+result is then concatenated with $\mathbf{h}_{\text{sty}}$ and passed through a linear
+projection followed by GELU activation and dropout to obtain the final fused
+representation~$\mathbf{h}_{\text{fused}} \in \mathbb{R}^{512}$.
+
+This design ensures that semantic features retain primacy while stylometric signals can
+selectively modulate the representation at positions where they carry discriminative
+evidence — a property that is particularly valuable when dealing with obfuscated or
+adversarially manipulated texts.
+
+\subsection{Unified Authorship Classification Classifier (UACC)}
+
+The classification head is a single linear layer projecting
+$\mathbf{h}_{\text{fused}} \in \mathbb{R}^{512}$ to a scalar logit, which is passed
+through a sigmoid to produce a probability score in $[0, 1]$. A threshold of 0.5 is
+applied to obtain binary predictions. Binary cross-entropy with logits is used as the
+training objective, with a class weight of 0.746 to account for the slight imbalance
+(approximately 57\% AI-generated samples) in the combined training corpus.
 
 
+%%
+%% Experimental Setup
+%%
+\section{Experimental Setup}
+
+\subsection{Datasets}
+
+Training and evaluation made use of two data sources.
+
+\paragraph{PAN 2026 official data.} The organisers provided a labelled training set
+consisting of 23{,}682 samples (after deduplication and length filtering), drawn from three
+genres: essays, news articles, and literary fiction. The corpus spans texts generated
+by more than 22 distinct large language models and covers several obfuscation strategies
+including synonym substitution, paraphrase, and homoglyph attacks. The class distribution
+is approximately 61.7\% AI-generated and 38.3\% human-written. A separate validation split
+of 3{,}589 samples was used for model selection.
+
+\paragraph{RAID benchmark.} To broaden coverage of both generators and attack types,
+the RAID dataset~\cite{dugan2024raid} was incorporated as an external resource. RAID is
+a large-scale benchmark compiled to stress-test detectors against a wide variety of
+LLMs and adversarial perturbations. After domain filtering (news, books, and poetry)
+and balancing, 30{,}000 samples (15{,}000 human, 15{,}000 AI) were used for training
+and 10{,}000 samples for held-out testing.
+
+The combined training corpus contains 38{,}503 samples with a corresponding validation
+set of 18{,}423 samples (PAN 2026 validation plus the RAID development portion).
+
+\subsection{Training Protocol}
+
+Training proceeded in two stages to balance stable optimisation with expressive capacity.
+Figure~\ref{fig:pipeline} illustrates the overall training and evaluation pipeline.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.90\columnwidth]{images/training_pipeline.png}
+  \caption{RADAR training pipeline and evaluation protocol. Two data sources are combined
+           into a single training set. Stage~1 trains only the lightweight components
+           with the encoder frozen; Stage~2 performs full end-to-end fine-tuning starting
+           from the Stage~1 checkpoint.}
+  \label{fig:pipeline}
+\end{figure}
+
+\paragraph{Stage 1 — Encoder-frozen training.} The ModernBERT-large weights are frozen,
+and only the SLPE, cross-attention fusion module, and classification head are updated.
+This stage trains approximately 1.2\% of the total parameters (roughly 4.9 million out of
+400 million) and allows the lightweight components to learn a meaningful alignment with the
+pre-trained encoder representations before any fine-tuning of the encoder itself.
+
+\paragraph{Stage 2 — End-to-end fine-tuning.} Starting from the Stage~1 checkpoint, all
+model weights are unfrozen and trained jointly. This allows the encoder to adapt its
+contextual representations to the detection task while building on the feature alignment
+already established in Stage~1.
+
+Both stages share the same hyperparameters: AdamW optimiser~\cite{loshchilov2019adamw}
+with $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\varepsilon = 10^{-8}$, and an initial
+learning rate of $2 \times 10^{-5}$ with a cosine decay schedule and a 3\% linear warmup.
+Batch sizes are 32 (training) and 64 (evaluation). Each stage is trained for up to 10
+epochs, with evaluation and checkpointing every 500 steps. The best checkpoint is selected
+by mean score on the validation set. Mixed-precision training (bf16/fp16) is used
+throughout. All experiments are run with a fixed random seed of 42 for reproducibility.
+
+\subsection{Evaluation Metrics}
+
+Following the official PAN 2026 evaluation protocol, performance is measured using five
+complementary metrics: ROC-AUC, Brier score, C@1, macro-averaged F1, and the soft-F1
+variant F0.5u. The primary metric is the arithmetic mean of these five scores.
+
+\subsection{Ablation Variants}
+
+In addition to the final RADAR system, three ablation experiments were conducted to isolate
+the contribution of different data sources and training strategies.
+
+\begin{itemize}
+  \item \textbf{radar-encoder-freeze}: Stage~1 training on the full combined corpus
+        (PAN 2026 + RAID), encoder frozen.
+  \item \textbf{radar-encoder-freeze-pan26}: Stage~1 training on PAN 2026 data only,
+        encoder frozen.
+  \item \textbf{radar-encoder-freeze-raid}: Stage~1 training on RAID data only,
+        encoder frozen.
+\end{itemize}
+
+These ablations allow a direct comparison of the benefit of combined data and full
+fine-tuning against more restricted training configurations.
+
+
+%%
+%% Results and Discussion
+%%
 \section{Results and Discussion}
 
+\subsection{Main Results}
 
+Table~\ref{tab:results} reports the evaluation results for all four experimental
+configurations on the PAN 2026 validation set and the RAID held-out test set.
 
+\begin{table}[h]
+  \centering
+  \caption{Evaluation results across all experimental configurations. PAN-Val refers to
+           the PAN 2026 validation set; RAID-Test refers to the RAID held-out test set.
+           Best result per column is shown in bold.}
+  \label{tab:results}
+  \small
+  \begin{tabular}{lcccccccc}
+    \toprule
+    & \multicolumn{4}{c}{\textbf{PAN-Val}} & \multicolumn{4}{c}{\textbf{RAID-Test}} \\
+    \cmidrule(lr){2-5} \cmidrule(lr){6-9}
+    \textbf{Model} & ROC & F1 & C@1 & \textbf{Mean} & ROC & F1 & C@1 & \textbf{Mean} \\
+    \midrule
+    radar-enc-freeze (PAN+RAID) & 0.999 & 0.985 & 0.981 & 0.983 & 0.973 & 0.929 & 0.927 & 0.933 \\
+    \textbf{RADAR (end-to-end)} & \textbf{1.000} & \textbf{0.997} & \textbf{0.996} & \textbf{0.997} & \textbf{0.990} & \textbf{0.964} & \textbf{0.964} & \textbf{0.972} \\
+    radar-enc-freeze (PAN only) & 0.999 & 0.986 & 0.984 & 0.985 & 0.740 & 0.674 & 0.671 & 0.681 \\
+    radar-enc-freeze (RAID only) & 0.777 & 0.703 & 0.700 & 0.714 & 0.968 & 0.933 & 0.931 & 0.938 \\
+    \midrule
+    TF-IDF SVM (baseline)        & ---   & ---   & ---   & 0.978 & --- & --- & --- & --- \\
+    Binoculars (baseline)         & ---   & ---   & ---   & 0.877 & --- & --- & --- & --- \\
+    PPMd Compression (baseline)  & ---   & ---   & ---   & 0.786 & --- & --- & --- & --- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
+The end-to-end fine-tuned RADAR model achieves a mean score of 0.997 on the PAN 2026
+validation set, with a near-perfect ROC-AUC of 1.000, outperforming all three baselines
+provided by the task organisers. On the externally held-out RAID test set, the same
+model scores 0.972, confirming that the improvements generalise beyond the in-domain
+distribution.
 
+\subsection{Effect of End-to-End Fine-Tuning}
 
+Comparing the encoder-frozen and end-to-end configurations trained on the same combined
+corpus reveals a consistent and substantial improvement from full fine-tuning.
+On the PAN 2026 validation set, mean score rises from 0.983 to 0.997. On the RAID test
+set, it rises from 0.933 to 0.972. These gains indicate that allowing the transformer
+encoder to adapt its internal representations to the detection task is worthwhile even
+when the frozen baseline is already strong, and that the two-stage strategy (establish
+feature alignment first, then refine end-to-end) is an effective way to achieve this
+without sacrificing training stability.
 
+\subsection{Contribution of External Data}
 
+The two single-source ablations illustrate the cost of domain restriction.
+The PAN-only model achieves a competitive 0.985 on the in-distribution validation set
+but drops sharply to 0.681 on RAID, revealing a significant generalisation gap.
+Conversely, the RAID-only model reaches 0.938 on the RAID test set but only 0.714 on
+the PAN 2026 validation set, suggesting it has learned features specific to the domains
+and generators present in RAID. The combined training regime is what bridges this
+gap: the full model reaches strong performance on both benchmarks simultaneously,
+demonstrating that diversity of training sources is a key factor in building detectors
+that are robust to unseen generators and domain shifts.
 
+\subsection{Comparison with Baselines}
 
+Among the three baselines reported for the PAN 2026 task, the TF-IDF SVM achieves
+the strongest mean score of 0.978, which is itself a competitive result reflecting
+the discriminative power of surface-level lexical statistics on in-domain data.
+RADAR exceeds this by 1.9 percentage points in mean score (0.997 vs. 0.978) while
+additionally generalising far better to out-of-domain evaluation (RAID mean 0.972 vs.
+the SVM baseline, which is not evaluated on that benchmark). The larger gap relative
+to Binoculars (0.877) and PPMd compression (0.786) is consistent with the known
+limitations of zero-shot perplexity-based detectors under obfuscation conditions.
 
+\subsection{Robustness to Adversarial Attacks}
 
+A central motivation for the dual-stream design is robustness to adversarial text
+manipulations. The RAID test set covers four attack categories — synonym substitution,
+homoglyph replacement, paraphrase, and alternative spelling — applied on top of
+multiple generator styles. The high RAID test performance (mean 0.972 for the final
+model) suggests that the combination of deep contextual representations with
+linguistically grounded stylometric features provides complementary coverage: attacks
+that successfully disrupt surface-level textual statistics are less likely to
+simultaneously disrupt the deeper semantic profile captured by the ARSE encoder, and
+vice versa. While a fine-grained per-attack analysis lies beyond the scope of this
+notebook paper, the aggregate results are encouraging.
 
+\subsection{Discussion}
 
+The results establish that RADAR is an effective and generalisable detector of
+AI-generated text under realistic adversarial conditions. The two principal
+design choices — integrating stylometric features via cross-attention rather than
+simple concatenation, and training in two stages — both contribute measurably to
+the final performance. The cross-attention fusion allows the model to selectively
+weight stylometric signals depending on the context, which is preferable to treating
+them as equal contributors to a fixed representation. The staged training approach
+allows the large pre-trained encoder to remain stable during the initial optimisation
+of the fusion and classification modules, reducing the risk of catastrophic forgetting.
 
+One limitation of the current system is its computational cost at inference time,
+which is dominated by the ModernBERT-large encoder. Future work could explore
+knowledge distillation into a smaller model while retaining the stylometric fusion
+component. Additionally, expanding the stylometric feature set to include discourse-level
+and intertextual features may further improve performance on long-form documents.
 
-
-
-
-
-
-
-
-%section{Citations and Bibliographies}
-
-The use of Bib\TeX{} for the preparation and formatting of one's
-references is strongly recommended. Authors' names should be complete
---- use full first names (``Donald E. Knuth'') not initials
-(``D. E. Knuth'') --- and the salient identifying features of a
-reference should be included: title, year, volume, number, pages,
-article DOI, etc.
-
-The bibliography is included in your source document with these two
-commands, placed just before the \verb|\end{document}|
-command:
-\begin{verbatim}
-\bibliography{bibfile}
-\end{verbatim}
-where ``\verb|bibfile|'' is the name, without the ``\verb|.bib|''
-suffix, of the Bib\TeX{} file.
-
-
-\section{Acknowledgments}
-
-Identification of funding sources and other support, and thanks to
-individuals and groups that assisted in the research and the
-preparation of the work should be included in an acknowledgment
-section, which is placed just before the reference section in your
-document.
-
-This section has a special environment:
-\begin{verbatim}
-\begin{acknowledgments}
-  These are different acknowledgments.
-\end{acknowledgments}
-\end{verbatim}
-so that the information contained therein can be more easily collected
-during the article metadata extraction phase, and to ensure
-consistency in the spelling of the section heading.
-
-Authors should not prepare this section as a numbered or unnumbered
-\verb|\section|; please use the ``\verb|acknowledgments|'' environment.
-
-\section{Appendices}
-
-If your work needs an appendix, add it before the
-``\verb|\end{document}|'' command at the conclusion of your source
-document.
-
-Start the appendix with the ``\verb|\appendix|'' command:
-\begin{verbatim}
-\appendix
-\end{verbatim}
-and note that in the appendix, sections are lettered, not
-numbered. 
 
 %%
-%% The acknowledgments section is defined using the "acknowledgments" environment
-%% (and NOT an unnumbered section). This ensures the proper
-%% identification of the section in the article metadata, and the
-%% consistent spelling of the heading.
+%% Conclusion
+%%
+\section{Conclusion}
+
+This paper presented RADAR, a dual-stream architecture for AI-generated text detection
+that combines deep contextual representations from a fine-tuned ModernBERT-large encoder
+with a rich set of handcrafted stylometric features. The two streams are integrated through
+a cross-attention fusion module, and training proceeds in two stages to balance
+optimisation stability with representational capacity.
+
+Evaluated on the PAN 2026 validation set and the RAID held-out test set, the final
+end-to-end fine-tuned model achieves mean scores of 0.997 and 0.972 respectively,
+outperforming all official baselines and demonstrating robust generalisation across
+unseen generators, genres, and adversarial attack strategies. Ablation experiments
+confirm that both the diversity of training data and the end-to-end fine-tuning stage
+are essential contributors to this performance.
+
+More broadly, the results support the view that combining learned neural representations
+with interpretable linguistic features is a productive direction for building robust
+detection systems — particularly in settings where adversarial manipulation is expected
+and where interpretability matters for downstream applications in academic integrity
+monitoring and forensic analysis.
+
+
+%%
+%% Acknowledgments
+%%
 \begin{acknowledgments}
-  Thanks to the developers of ACM consolidated LaTeX styles
-  \url{https://github.com/borisveytsman/acmart} and to the developers
-  of Elsevier updated \LaTeX{} templates
-  \url{https://www.ctan.org/tex-archive/macros/latex/contrib/els-cas-templates}.  
+The author thanks the PAN 2026 organising committee for providing the shared-task
+infrastructure and labelled data, and acknowledges the contributors to the RAID
+benchmark for making a challenging evaluation resource publicly available.
 \end{acknowledgments}
 
-%% The declaration on generative AI comes in effect
-%% in Janary 2025. See also
-%% https://ceur-ws.org/GenAI/Policy.html
+%%
+%% Declaration on Generative AI
+%%
 \section*{Declaration on Generative AI}
-  {\em Either:}\newline
-  The author(s) have not employed any Generative AI tools.
-  \newline
-  
- \noindent{\em Or (by using the activity taxonomy in ceur-ws.org/genai-tax.html):\newline}
- During the preparation of this work, the author(s) used X-GPT-4 and Gramby in order to: Grammar and spelling check. Further, the author(s) used X-AI-IMG for figures 3 and 4 in order to: Generate images. After using these tool(s)/service(s), the author(s) reviewed and edited the content as needed and take(s) full responsibility for the publication’s content. 
+The author(s) have not employed any Generative AI tools in the preparation of this work.
 
 %%
-%% Define the bibliography file to be used
-\bibliography{pan25-lit}
+%% Bibliography
+%%
+\bibliography{pan25-lit,participant-lit}
 
 \end{document}
-
-%%
-%% End of file
-

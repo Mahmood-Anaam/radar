@@ -1,0 +1,15 @@
+The proliferation of large language models has made distinguishing human-authored text from
+machine-generated content an increasingly difficult problem. This paper presents RADAR
+(Robust Adversarial-Resistant Detection with Adaptive Reasoning), a two-stream neural
+architecture developed for the PAN 2026 Voight-Kampff Generative AI Detection shared task.
+RADAR combines deep contextual representations from a fine-tuned ModernBERT-large encoder
+with handcrafted stylometric features drawn from five linguistic dimensions.
+The two streams are integrated through a cross-attention fusion module that allows the
+semantic representation to attend to stylometric signals, enabling the model to reason over
+both surface-level and structural writing patterns simultaneously.
+Training is conducted in two stages: an initial stage with the encoder frozen to establish
+stable feature alignment, followed by full end-to-end fine-tuning on a combined corpus
+comprising the PAN 2026 official training set and the RAID benchmark.
+On the PAN 2026 validation set, the final model achieves a mean score of 0.997
+(ROC-AUC~1.000), and on the RAID held-out test set a mean score of 0.972, demonstrating
+strong in-domain accuracy and cross-domain robustness.

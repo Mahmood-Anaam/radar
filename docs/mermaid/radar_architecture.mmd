@@ -1,0 +1,27 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TD
+    A["Input Text"] --> B["Text Preprocessing\n(PII masking, lowercasing)"]
+    B --> C["Tokenizer\n(ModernBERT tokenizer, max 512 tokens)"]
+    B --> D["SLPE\nStatistical Linguistic Profile Extractor\n38 stylometric features"]
+
+    C --> E["ARSE\nAdaptive Representation Semantic Encoder\nModernBERT-large 398M params"]
+    E --> F["CLS Token\nh_semantic ∈ ℝ¹⁰²⁴"]
+
+    D --> G["Style Projection Layer\nLinear → LayerNorm → GELU → Dropout\nh_style_proj ∈ ℝ¹²⁸"]
+
+    F --> H["Cross-Attention Fusion\nQuery: h_semantic  Key/Value: projected style\nResidual + LayerNorm + Fusion MLP\nh_fused ∈ ℝ⁵¹²"]
+    G --> H
+
+    H --> I["UACC\nUncertainty-Aware Classification Component\nLinear(512→1) + Sigmoid"]
+    I --> J["Confidence Score p ∈ 0,1\np < 0.5 → Human\np > 0.5 → AI-generated"]
+
+    style A fill:#4472C4,color:#fff
+    style B fill:#70AD47,color:#fff
+    style C fill:#ED7D31,color:#fff
+    style D fill:#FFC000,color:#000
+    style E fill:#7030A0,color:#fff
+    style F fill:#9B59B6,color:#fff
+    style G fill:#F39C12,color:#fff
+    style H fill:#C0392B,color:#fff
+    style I fill:#2980B9,color:#fff
+    style J fill:#27AE60,color:#fff

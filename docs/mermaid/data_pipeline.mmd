@@ -1,0 +1,43 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart LR
+    subgraph PAN26["PAN-2026 Official Dataset"]
+        P1["Train\n23,682 samples\n(38.3% human, 61.7% AI)"]
+        P2["Val\n3,589 samples\n(35.6% human, 64.4% AI)"]
+    end
+
+    subgraph RAID["RAID External Dataset (5.6M)"]
+        R1["Filter by genre\nnews, books, poetry\n2,239,440 samples"]
+        R2["Filter by attack\nnone, homoglyph, synonym,\nparaphrase, alt_spelling\n933,100 samples"]
+        R3["Balanced Sampling\n60%/40% stratified split"]
+        R4["Dev: 559,860\n→ sample 30,000\n(50% human, 50% AI)"]
+        R5["Test: 373,240\n→ sample 10,000\n(50% human, 50% AI)"]
+        R1 --> R2 --> R3 --> R4
+        R3 --> R5
+    end
+
+    subgraph Preprocessing
+        PP1["PII Masking\nemails, phones, mentions"]
+        PP2["Lowercasing + strip"]
+        PP3["Deduplication\nMin length filter ≥50 chars"]
+    end
+
+    P1 --> PP1
+    P2 --> PP1
+    R4 --> PP1
+    R5 --> PP1
+    PP1 --> PP2 --> PP3
+
+    subgraph FinalSplits["Final Combined Splits"]
+        FS1["Train: 38,503\n(PAN-2026 + RAID dev)"]
+        FS2["Val: 18,423\n(PAN-2026 + RAID dev)"]
+        FS3["Test: 10,000\n(RAID test only)"]
+    end
+
+    PP3 --> FS1
+    PP3 --> FS2
+    PP3 --> FS3
+
+    style PAN26 fill:#D6E4FF,stroke:#4472C4
+    style RAID fill:#FFE0CC,stroke:#ED7D31
+    style Preprocessing fill:#E2EFDA,stroke:#70AD47
+    style FinalSplits fill:#FFF2CC,stroke:#FFC000

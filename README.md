@@ -45,22 +45,22 @@ tira-cli code-submission \
 
 ### MahmoodAnaam/radar-encoder-freeze
 
-<img width="1600" height="386" alt="image" src="https://github.com/user-attachments/assets/f32a7c4a-fd9d-444f-8df2-230e9661b230" />
+<img alt="image" src="docs/assets/radar-encoder-freeze.png" />
 
 
 ### MahmoodAnaam/RADAR
 
-<img width="1600" height="445" alt="image" src="https://github.com/user-attachments/assets/32bd8889-a774-4c88-932b-a48d30fa687a" />
+<img  alt="image" src="docs/assets/RADAR.png" />
 
 
 ### MahmoodAnaam/radar-encoder-freeze-pan26
 
-<img width="1600" height="447" alt="image" src="https://github.com/user-attachments/assets/8336836f-c079-4d57-a200-8179afb6cd07" />
+<img  alt="image" src="docs/assets/radar-encoder-freeze-pan26.png" />
 
 
 ### MahmoodAnaam/radar-encoder-freeze-raid
 
-<img width="1600" height="390" alt="image" src="https://github.com/user-attachments/assets/af357deb-d6ce-4d21-88e2-0762abfc6c0c" />
+<img alt="image" src="docs/assets/radar-encoder-freeze-raid.png" />
 
 
 

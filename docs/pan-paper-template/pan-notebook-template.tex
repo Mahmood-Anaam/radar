@@ -11,7 +11,7 @@
 
 %%
 %% This command is for the conference information
-\conference{CLEF 2026 Working Notes, PAN Lab}
+\conference{CLEF 2026 Working Notes, 21--24 September 2026, Jena, Germany}
 
 %%
 %% The "title" command
@@ -35,7 +35,7 @@ email=yusralqarni@gmail.com,
 \begin{abstract}
 We present RADAR (Robust Adversarial-Resistant Detection with Adaptive
 Reasoning), a hybrid neural system for binary AI-generated text detection
-submitted to the PAN 2026 Voight-Kampff shared task. The system fuses deep
+submitted to the PAN 2026 Voight-Kampff shared task~\cite{bevendorff:2026b,bevendorff:2026c}. The system fuses deep
 semantic representations extracted by a large pretrained encoder with
 handcrafted stylometric signals through a cross-attention-style fusion mechanism, yielding
 a unified representation for classification. RADAR was trained in two stages:
@@ -69,7 +69,7 @@ Authorship verification and AI-generated text detection have become increasingly
 
 To address this challenge, several detection approaches have been proposed, including statistical methods based on perplexity and token probability distributions~\cite{gehrmann2019gltr}, zero-shot detection techniques exploiting probability curvature properties~\cite{mitchell2023detectgpt}, and supervised transformer-based classifiers trained on labelled corpora~\cite{jawahar2020survey}. While existing approaches often achieve strong performance under controlled experimental conditions, their robustness is still limited when applied to unseen domains, previously unseen generators, or obfuscated texts~\cite{krishna2023paraphrasing}. In addition, many current detectors operate as opaque classification systems, offering limited interpretability and little linguistic justification for their predictions; this opacity can limit practical trust in forensic and institutional settings where high-stakes decisions require transparent evidence~\cite{rudin2019stop}.
 
-These challenges have increased interest in stylometry and forensic linguistics as complementary approaches for AI-generated text detection. Compared to purely neural detectors, stylometric methods focus on quantifiable linguistic features indicative of writing style, including lexical diversity, syntactic variation, punctuation usage, and readability characteristics~\cite{juola2006authorship,coulthard2017forensic}. Such linguistic features are typically more interpretable and often remain effective even when superficial textual patterns are obscured. The PAN 2026 Voight-Kampff Generative AI Detection shared task especially targets these challenges by evaluating detection systems under real-world conditions involving style imitation, obfuscation, and previously unseen generators~\cite{rangel2026pan}. In this paper, we present RADAR (Robust Adversarial-Resistant Detection with Adaptive Reasoning), a hybrid framework that combines transformer-based semantic representations with handcrafted stylometric features to improve robustness and generalization across challenging evaluation conditions. To further enhance generalization, the proposed framework is trained using both the official PAN-2026 dataset and a curated subset of the RAID benchmark dataset~\cite{dugan2024raid}.
+These challenges have increased interest in stylometry and forensic linguistics as complementary approaches for AI-generated text detection. Compared to purely neural detectors, stylometric methods focus on quantifiable linguistic features indicative of writing style, including lexical diversity, syntactic variation, punctuation usage, and readability characteristics~\cite{juola2006authorship,coulthard2017forensic}. Such linguistic features are typically more interpretable and often remain effective even when superficial textual patterns are obscured. The PAN 2026 Voight-Kampff Generative AI Detection shared task, organized within the broader PAN 2026 evaluation lab, especially targets these challenges by evaluating detection systems under real-world conditions involving style imitation, obfuscation, and previously unseen generators~\cite{bevendorff:2026b,bevendorff:2026c,panwebis2026}. In this paper, we present RADAR (Robust Adversarial-Resistant Detection with Adaptive Reasoning), a hybrid framework that combines transformer-based semantic representations with handcrafted stylometric features to improve robustness and generalization across challenging evaluation conditions. To further enhance generalization, the proposed framework is trained using both the official PAN-2026 dataset and a curated subset of the RAID benchmark dataset~\cite{dugan2024raid}.
 To support replication, we publish the source code of the RADAR approach\footnote{\url{https://github.com/yusrpro9/radar}}.
 
 \section{Task and Data}
@@ -153,7 +153,7 @@ In the second stage, training resumed from the frozen-encoder checkpoint and the
 
 \subsection{Controlled variants}
 
-We trained two additional variants to analyze data-source effects. The PAN-only frozen-encoder model used the official PAN data without RAID augmentation. The RAID-only frozen-encoder model used the filtered RAID development data and evaluated on the RAID held-out sample, with an additional cross-domain check on the PAN validation split. These variants were not intended as final submissions; they were used to understand how much robustness came from the architecture and how much came from source diversity. In the result tables, EF denotes an encoder-frozen variant, while RADAR denotes the full two-stage model submitted after end-to-end fine-tuning.
+We trained two additional variants to analyze data-source effects. The naming of these variants is intentionally mechanical: EF means that the ModernBERT encoder was frozen for the entire run, not merely during the first stage of the two-stage curriculum. Thus, RADAR-EF is the frozen-encoder model trained on the PAN+RAID mixture; RADAR-EF-PAN26 is the same frozen-encoder architecture trained only on the official PAN 2026 training split; and RADAR-EF-RAID is the same frozen-encoder architecture trained only on the filtered RAID development subset. In contrast, RADAR denotes the second-stage end-to-end model initialized from RADAR-EF and then trained with the encoder unfrozen. The PAN-only and RAID-only EF variants were used to separate the effects of the training source from the effects of updating the pretrained encoder.
 
 
 \section{Results and Discussion}
@@ -226,7 +226,34 @@ configurations.
 The single-source variants highlight a clear domain-mixing effect. RADAR-EF-PAN26 performs strongly on the official PAN validation split but drops on the RAID held-out test set, whereas RADAR-EF-RAID performs well on RAID but transfers less effectively to PAN. The combined-data variants reduce this cross-domain gap, and the full two-stage RADAR model improves both in-domain and out-of-domain performance. This pattern supports the use of RAID as a robustness regularizer while preserving the task-specific PAN distribution as the central target.
 \newline
 
-\noindent\textit{Note:} While the observed results are highly encouraging (mean = 0.997, ROC-AUC = 1.000), the in-domain PAN 2026 validation performance requires cautious interpretation due to the distributional similarity between the training and validation data. The out-of-domain RAID result (mean = 0.972) offers more realistic estimate of the model's robustness.
+\noindent\textit{Note:} While the observed results are highly encouraging (mean = 0.997, ROC-AUC = 1.000), the in-domain PAN 2026 validation performance requires cautious interpretation due to the distributional similarity between the training and validation data. The out-of-domain RAID result (mean = 0.972) offers a more realistic estimate of the model's robustness.
+
+\subsection{Official platform results}
+
+After notebook submission, we evaluated four packaged RADAR checkpoints on the TIRA platform. Table~\ref{tab:tira-results} reports the official scores on the main PAN 2026 test set, \texttt{pan26-generative-ai-detection-20260507-test}. The best official submission was \texttt{radar-encoder-freeze}, which placed 11th on the task leaderboard and reached a mean score of 0.788. This checkpoint corresponds to the frozen-encoder PAN+RAID model rather than the fully unfrozen second-stage model.
+
+\begin{table}[ht]
+\centering
+\caption{Official TIRA results on \texttt{pan26-generative-ai-detection-20260507-test}. Brier denotes the PAN Brier-score complement; higher is better for every metric.}
+\label{tab:tira-results}
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Checkpoint} & \textbf{ROC-AUC} & \textbf{Brier comp.} & \textbf{C@1} & \textbf{F1} & \textbf{F0.5u} & \textbf{Mean} \\
+\midrule
+\texttt{radar-encoder-freeze} & 0.772 & \textbf{0.805} & \textbf{0.722} & \textbf{0.800} & \textbf{0.839} & \textbf{0.788} \\
+\texttt{radar-encoder-freeze-raid} & 0.701 & 0.792 & 0.694 & 0.783 & 0.812 & 0.756 \\
+\texttt{radar-encoder-freeze-pan26} & 0.673 & 0.658 & 0.545 & 0.608 & 0.736 & 0.644 \\
+\texttt{RADAR} & \textbf{0.790} & 0.541 & 0.530 & 0.555 & 0.741 & 0.632 \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+The official results differ from the local validation trend in an informative way. The unfrozen RADAR checkpoint obtained the highest ROC-AUC on the hidden PAN 2026 test set, which suggests that it still ranked many examples correctly. However, its Brier complement, C@1, F1, and F0.5u were much lower, indicating poor probability calibration and an unfavorable operating point near the 0.5 decision threshold. By contrast, the frozen encoder produced less extreme adaptation to the development distribution and delivered better calibrated probabilities and stronger thresholded decisions on the hidden data. A likely explanation is that full end-to-end fine-tuning over-specialized the 394M-parameter ModernBERT encoder to artifacts of the local PAN+RAID mixture and the public validation split, while the frozen model preserved the broad linguistic representation learned during pretraining and forced the smaller fusion and classification layers to adapt. The RAID-only checkpoint was competitive on the hidden PAN test despite failing on the smoke-test training split, suggesting that obfuscation-oriented external data helped thresholded robustness but was not sufficient without the task-specific PAN distribution. For the camera-ready paper, we therefore treat the frozen-encoder PAN+RAID checkpoint as the most reliable official submission and the end-to-end checkpoint as a useful but over-adapted ablation.
 
 
 
@@ -296,7 +323,7 @@ examples, whereas the combined-dataset model achieves strong results across both
 in-domain and adversarially obfuscated evaluation sets. The submitted model,
 RADAR, reached a mean score of 0.997 on the official PAN-2026 validation set
 and 0.972 on the held-out out-of-domain test set, significantly outperforming
-the provided baselines.
+the provided baselines in our local evaluation. The hidden-test evaluation further showed that the frozen-encoder PAN+RAID checkpoint was the most reliable official submission, emphasizing that conservative adaptation can be preferable to full fine-tuning when the final test distribution contains unseen generators and obfuscations.
 
 Future work could explore replacing the rule-based stylometric extractor with a
 lightweight trained component to improve feature quality on short texts, and
@@ -305,7 +332,7 @@ examples to further narrow the gap between in-domain and out-of-domain
 performance.
 
 \begin{acknowledgments}
-The authors thank the PAN 2026 organizers for preparing the Voight-Kampff Generative AI Detection task and the maintainers of the open-source libraries used in this work, including PyTorch, Transformers, Datasets, and the PAN evaluation package.\cite{bevendorff:2025,froebe:2023b}
+The authors thank the PAN 2026 organizers for preparing the Voight-Kampff Generative AI Detection task and the maintainers of the open-source libraries used in this work, including PyTorch, Transformers, Datasets, and the PAN evaluation package~\cite{bevendorff:2026b,bevendorff:2026c,froebe:2023b}.
 \end{acknowledgments}
 
 \section*{Declaration on Generative AI}
